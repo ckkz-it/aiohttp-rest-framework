@@ -3,8 +3,9 @@ import typing
 
 import marshmallow as mm
 
-from aiohttp_rest_framework.db import AioPGService, DatabaseServiceABC
+from aiohttp_rest_framework.db import DatabaseServiceABC
 from aiohttp_rest_framework.exceptions import ValidationError
+from aiohttp_rest_framework.settings import config, Config
 
 
 class empty:
@@ -21,29 +22,26 @@ class ModelSerializerOpts(mm.SchemaOpts):
     def __init__(self, meta, ordered: bool = False):
         super().__init__(meta, ordered)
         assert hasattr(meta, "model") and meta.model is not None, (
-            "`model` option has to be specified in serializer's `Meta` class"
+            f"`model` option has to be specified in {self.__class__.__name__}'s `Meta` class"
         )
-        assert hasattr(meta, "connection") and meta.connection is not None, (
-            "`connection` option has to be specified in serializer's `Meta` class"
-        )
-        self.ordered = True
         self.model = meta.model
-        self.connection = meta.connection
-        self.db_service_class: typing.Type[DatabaseServiceABC] = \
-            getattr(meta, "db_service", AioPGService)
 
 
 class Serializer(mm.Schema):
     instance: typing.Any = None
 
-    def __init__(self, instance=None, data: typing.Any = empty, **kwargs):
+    def __init__(self, instance=None, data: typing.Any = empty, as_string: bool = False, **kwargs):
         self.instance = instance
         if data is not empty:
             self.initial_data = data
         self.partial = kwargs.pop("partial", False)
+        self.as_string = as_string
+        self._context = kwargs.pop("context", {})
         super().__init__(**kwargs)
 
     def to_internal_value(self, data):
+        if self.as_string:
+            return self.loads(data, partial=self.partial)
         return self.load(data, partial=self.partial)
 
     def to_representation(self, instance):
@@ -73,12 +71,12 @@ class Serializer(mm.Schema):
         )
 
         if self.instance is not None:
-            self.instance = self.update(self.instance, validated_data)
+            self.instance = await self.update(self.instance, validated_data)
             assert self.instance is not None, (
                 "`update()` did not return an object instance."
             )
         else:
-            self.instance = self.create(validated_data)
+            self.instance = await self.create(validated_data)
             assert self.instance is not None, (
                 "`create()` did not return an object instance."
             )
@@ -140,6 +138,19 @@ class Serializer(mm.Schema):
 
         return not bool(self._errors)
 
+    @property
+    def context(self):
+        return self._context
+
+    @property
+    def config(self) -> Config:
+        if self.context and "config" in self.context:
+            return self.context["config"]
+        return config
+
+    class Meta:
+        ordered = True
+
 
 class ModelSerializer(Serializer):
     _db_service: DatabaseServiceABC = None
@@ -154,7 +165,7 @@ class ModelSerializer(Serializer):
         return await self.db_service.create(validated_data)
 
     @property
-    def db_service(self):
+    def db_service(self) -> DatabaseServiceABC:
         if not self._db_service:
-            self._db_service = self.opts.db_service_class(self.opts.connection, self.opts.model)
+            self._db_service = self.config.db_service_class(self.config.connection, self.opts.model)
         return self._db_service
