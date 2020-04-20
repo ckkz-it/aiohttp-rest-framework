@@ -5,7 +5,7 @@ import marshmallow as mm
 
 from aiohttp_rest_framework.db import DatabaseServiceABC
 from aiohttp_rest_framework.exceptions import ValidationError
-from aiohttp_rest_framework.settings import config, Config
+from aiohttp_rest_framework.settings import Config, config
 
 
 class empty:

@@ -1,6 +1,6 @@
 import json
 
-from aiohttp import web, hdrs
+from aiohttp import hdrs, web
 
 
 class AioRestException(Exception):

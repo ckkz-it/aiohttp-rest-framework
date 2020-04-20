@@ -1,5 +1,4 @@
 import abc
-
 import typing
 
 from aiopg.sa import Engine

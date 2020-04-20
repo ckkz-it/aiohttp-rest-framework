@@ -2,7 +2,7 @@ import typing
 
 from aiohttp import web
 
-from aiohttp_rest_framework.db import DatabaseServiceABC, AioPGService
+from aiohttp_rest_framework.db import AioPGService, DatabaseServiceABC
 
 
 class Config:

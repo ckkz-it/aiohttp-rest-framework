@@ -1,7 +1,6 @@
 import typing
 
 from aiohttp import web
-
 from aiohttp_cors import CorsViewMixin
 
 from aiohttp_rest_framework.db import DatabaseServiceABC
