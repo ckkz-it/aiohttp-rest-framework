@@ -34,7 +34,7 @@ class GenericAPIView(CorsViewMixin, web.View):
     def db_service(self):
         if not self._db_service:
             self._db_service = \
-                self.rest_config.db_service_class(self.rest_config.connection, self.model)
+                self.rest_config.db_service_class(self.rest_config.get_connection(), self.model)
         return self._db_service
 
     @property

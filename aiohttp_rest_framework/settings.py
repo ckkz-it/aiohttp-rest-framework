@@ -13,7 +13,7 @@ class Config:
             connection: typing.Any = None,
             db_service: typing.Type[DatabaseServiceABC] = AioPGService,
     ):
-        self.connection = connection or app["db"]
+        self.get_connection = lambda: connection or app["db"]
         self.db_service_class = db_service
 
 

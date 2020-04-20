@@ -167,5 +167,6 @@ class ModelSerializer(Serializer):
     @property
     def db_service(self) -> DatabaseServiceABC:
         if not self._db_service:
-            self._db_service = self.config.db_service_class(self.config.connection, self.opts.model)
+            self._db_service = \
+                self.config.db_service_class(self.config.get_connection(), self.opts.model)
         return self._db_service
