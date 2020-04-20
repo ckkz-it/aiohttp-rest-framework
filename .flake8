@@ -1,0 +1,2 @@
+exclude = .git, __pycache__, .idea, venv, dist, build, pytest_cache
+max-line-length = 100
