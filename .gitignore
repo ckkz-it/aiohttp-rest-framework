@@ -4,6 +4,8 @@ __pycache__/
 
 venv/
 
+.env
+
 .DS_Store
 
 *.egg-info
