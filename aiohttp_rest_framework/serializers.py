@@ -3,8 +3,7 @@ import typing
 
 import marshmallow as mm
 
-import sqlalchemy as sa
-
+from aiohttp_rest_framework.db import AioPGService, DatabaseServiceABC
 from aiohttp_rest_framework.exceptions import ValidationError
 
 
@@ -18,7 +17,23 @@ class empty:
     pass
 
 
-class BaseSerializer(mm.Schema):
+class ModelSerializerOpts(mm.SchemaOpts):
+    def __init__(self, meta, ordered: bool = False):
+        super().__init__(meta, ordered)
+        assert hasattr(meta, "model") and meta.model is not None, (
+            "`model` option has to be specified in serializer's `Meta` class"
+        )
+        assert hasattr(meta, "connection") and meta.connection is not None, (
+            "`connection` option has to be specified in serializer's `Meta` class"
+        )
+        self.ordered = True
+        self.model = meta.model
+        self.connection = meta.connection
+        self.db_service_class: typing.Type[DatabaseServiceABC] = \
+            getattr(meta, "db_service", AioPGService)
+
+
+class Serializer(mm.Schema):
     instance: typing.Any = None
 
     def __init__(self, instance=None, data: typing.Any = empty, **kwargs):
@@ -126,10 +141,20 @@ class BaseSerializer(mm.Schema):
         return not bool(self._errors)
 
 
-class ModelSerializer(BaseSerializer):
-    async def update(self, pk, validated_data: typing.Mapping):
-        model: sa.Table = self.Meta.model
-        pk_field = self.Meta.pk_field
+class ModelSerializer(Serializer):
+    _db_service: DatabaseServiceABC = None
 
-    async def create(self, validated_data: typing.Mapping):
-        pass
+    OPTIONS_CLASS = ModelSerializerOpts
+    opts: ModelSerializerOpts = None
+
+    async def update(self, pk: typing.Any, validated_data: typing.OrderedDict):
+        return await self.db_service.update(pk, validated_data)
+
+    async def create(self, validated_data: typing.OrderedDict):
+        return await self.db_service.create(validated_data)
+
+    @property
+    def db_service(self):
+        if not self._db_service:
+            self._db_service = self.opts.db_service_class(self.opts.connection, self.opts.model)
+        return self._db_service

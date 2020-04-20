@@ -5,57 +5,50 @@ import typing
 from aiopg.sa import Engine
 from aiopg.sa.result import ResultProxy, RowProxy
 from sqlalchemy import Table
-from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from aiohttp_rest_framework import types
 
 
 class DatabaseServiceABC(metaclass=abc.ABCMeta):
-    def __init__(self, connection):
+    def __init__(self, connection, model=None):
         self.connection = connection
+        self.model = model
 
     @abc.abstractmethod
-    async def create(self, *args, **kwargs):
+    async def create(self, data: typing.Mapping):
         pass
 
     @abc.abstractmethod
-    async def update(self, *args, **kwargs):
+    async def update(self, pk: typing.Any, data: typing.Mapping):
         pass
 
     @abc.abstractmethod
-    async def delete(self, *args, **kwargs):
+    async def delete(self, pk: typing.Any):
         pass
 
 
-class PostgresService(DatabaseServiceABC):
-    connection: Engine = None
-    db_table: Table = None
+class AioPGService(DatabaseServiceABC):
+    connection: Engine
+    model: Table
 
-    def __init__(self, connection: Engine, db_table: Table = None):
-        super().__init__(connection)
-        self.db_table = db_table
-
-    async def create(
-            self,
-            data: dict,
-            *,
-            return_created_obj: bool = False,
-    ) -> typing.Optional[RowProxy]:
-        query = self.db_table.insert().values(**data)
-        if return_created_obj:
-            query = query.returning(*self.db_table.columns)
-        return await self.execute(query, fetch='one')
+    async def create(self, data: typing.Mapping) -> RowProxy:
+        query = self.model.insert().values(**data).returning(*self.model.columns)
+        return await self.execute(query, fetch="one")
 
     async def update(
             self,
-            data: dict,
-            where: typing.Union[BinaryExpression, BooleanClauseList] = None,
-    ) -> ResultProxy:
-        query = self.db_table.update(where).values(**data)
-        return await self.execute(query)
+            pk: typing.Any,
+            data: typing.Mapping,
+            *,
+            pk_field: str = "id",
+    ) -> RowProxy:
+        where = {pk_field: pk}
+        query = self.model.update(**where).values(**data)
+        await self.execute(query)
+        return await self.execute(self.model.select(**where), fetch="one")
 
-    async def delete(self, pk: typing.Any, *, pk_field: str = 'id'):
-        query = self.db_table.delete(**{pk_field: pk})
+    async def delete(self, pk: typing.Any, *, pk_field: str = "id") -> ResultProxy:
+        query = self.model.delete(**{pk_field: pk})
         return await self.execute(query)
 
     async def execute(
