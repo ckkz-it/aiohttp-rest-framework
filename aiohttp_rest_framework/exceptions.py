@@ -10,5 +10,5 @@ class AioRestException(Exception):
 class ValidationError(web.HTTPBadRequest):
     def __init__(self, detail=None, **kwargs):
         super().__init__(**kwargs)
-        self._headers[hdrs.CONTENT_TYPE] = 'application/json'
+        self._headers[hdrs.CONTENT_TYPE] = "application/json"
         self.text = json.dumps(detail)

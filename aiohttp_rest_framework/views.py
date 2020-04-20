@@ -13,8 +13,6 @@ class GenericAPIView(CorsViewMixin, web.View):
     lookup_field = "id"
     lookup_url_kwarg = None
 
-    query = None
-
     serializer_class: typing.Type[Serializer] = None
 
     _db_service: DatabaseServiceABC = None
@@ -43,13 +41,6 @@ class GenericAPIView(CorsViewMixin, web.View):
     @property
     def model(self):
         return self.get_serializer_class().Meta.model
-
-    def get_query(self):
-        assert self.query is not None, (
-            f"'{self.__class__.__name__}' should either include a `query` "
-            "attribute or override `get_query()` method"
-        )
-        return self.query
 
     def get_serializer_class(self):
         assert self.serializer_class is not None, (
@@ -84,15 +75,13 @@ class GenericAPIView(CorsViewMixin, web.View):
     async def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         where = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-        query = self.get_query().where(where)
-        obj = await self.db_service.get(query)
+        obj = await self.db_service.get(where)
         if not obj:
             raise web.HTTPNotFound()
         return obj
 
     async def get_list(self):
-        query = self.get_query()
-        return await self.db_service.filter(query)
+        return await self.db_service.filter(None)
 
 
 class CreateModelMixin:
@@ -128,7 +117,7 @@ class UpdateModelMixin:
         await self.get_object()  # may raise 404
 
         data = await self.request.text()
-        serializer = self.get_serializer(data=data, as_text=True)
+        serializer = self.get_serializer(data=data, as_text=True, partial=self.partial)
         serializer.is_valid(raise_exception=True)
 
         updated_instance = await self.perform_update(serializer)
