@@ -9,6 +9,11 @@ flake8-quotes = "*"
 isort = "*"
 
 [packages]
+marshmallow = "*"
+aiohttp = "*"
+aiopg = "*"
+sqlalchemy = "*"
+aiohttp-cors = "*"
 
 [requires]
 python_version = "3.8"
