@@ -1,5 +1,11 @@
+import copy
 import typing
-from marshmallow import Schema, ValidationError
+
+import marshmallow as mm
+
+import sqlalchemy as sa
+
+from aiohttp_rest_framework.exceptions import ValidationError
 
 
 class empty:
@@ -12,10 +18,10 @@ class empty:
     pass
 
 
-class BaseSerializer(Schema):
+class BaseSerializer(mm.Schema):
     instance: typing.Any = None
 
-    def __init__(self, instance=None, data=empty, **kwargs):
+    def __init__(self, instance=None, data: typing.Any = empty, **kwargs):
         self.instance = instance
         if data is not empty:
             self.initial_data = data
@@ -23,13 +29,13 @@ class BaseSerializer(Schema):
         super().__init__(**kwargs)
 
     def to_internal_value(self, data):
-        raise NotImplementedError("`to_internal_value()` must be implemented.")
+        return self.load(data, partial=self.partial)
 
     def to_representation(self, instance):
-        raise NotImplementedError("`to_representation()` must be implemented.")
+        return self.dump(instance)
 
     def get_initial(self):
-        return self.initial_data
+        return copy.deepcopy(self.initial_data)
 
     async def update(self, instance, validated_data):
         raise NotImplementedError("`update()` must be implemented.")
@@ -107,8 +113,8 @@ class BaseSerializer(Schema):
 
         if not hasattr(self, "_validated_data"):
             try:
-                self._validated_data = self.load(typing.cast(typing.Any, self.initial_data))
-            except ValidationError as exc:
+                self._validated_data = self.to_internal_value(self.get_initial())
+            except mm.ValidationError as exc:
                 self._validated_data = {}
                 self._errors = exc.messages
             else:
@@ -120,20 +126,10 @@ class BaseSerializer(Schema):
         return not bool(self._errors)
 
 
-class Serializer(BaseSerializer):
-    def to_internal_value(self, data):
-        return self.load(data)
+class ModelSerializer(BaseSerializer):
+    async def update(self, pk, validated_data: typing.Mapping):
+        model: sa.Table = self.Meta.model
+        pk_field = self.Meta.pk_field
 
-    def to_representation(self, instance):
-        return self.dump(instance)
-
-    def get_initial(self):
-        return self.initial_data
-
-
-class ModelSerializer(Serializer):
-    async def update(self, instance, validated_data):
-        pass
-
-    async def create(self, validated_data):
+    async def create(self, validated_data: typing.Mapping):
         pass
