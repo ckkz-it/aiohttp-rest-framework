@@ -39,6 +39,10 @@ class GenericAPIView(CorsViewMixin, web.View):
 
     @property
     def model(self):
+        serializer_class = self.get_serializer_class()
+        assert hasattr(serializer_class.Meta, "model"), (
+            f"`model` attribute for {serializer_class.__class__.__name__}'s `Meta` has to be set"
+        )
         return self.get_serializer_class().Meta.model
 
     def get_serializer_class(self):
@@ -113,10 +117,11 @@ class RetrieveModelMixin:
 
 class UpdateModelMixin:
     async def update(self, *args, **kwargs):
-        await self.get_object()  # may raise 404
+        instance = await self.get_object()  # may raise 404
 
         data = await self.request.text()
-        serializer = self.get_serializer(data=data, as_text=True, partial=self.partial)
+        serializer = self.get_serializer(instance, data=data, as_text=True,
+                                         partial=self.kwargs["partial"])
         serializer.is_valid(raise_exception=True)
 
         updated_instance = await self.perform_update(serializer)

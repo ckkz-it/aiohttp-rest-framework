@@ -21,10 +21,7 @@ class empty:
 class ModelSerializerOpts(mm.SchemaOpts):
     def __init__(self, meta, ordered: bool = False):
         super().__init__(meta, ordered)
-        assert hasattr(meta, "model") and meta.model is not None, (
-            f"`model` option has to be specified in {self.__class__.__name__}'s `Meta` class"
-        )
-        self.model = meta.model
+        self.model = getattr(meta, "model", None)
 
 
 class Serializer(mm.Schema):
@@ -36,7 +33,7 @@ class Serializer(mm.Schema):
             self.initial_data = data
         self.partial = kwargs.pop("partial", False)
         self.as_string = as_string
-        self._context = kwargs.pop("context", {})
+        self._serializer_context = kwargs.pop("context", {})
         super().__init__(**kwargs)
 
     def to_internal_value(self, data):
@@ -139,13 +136,13 @@ class Serializer(mm.Schema):
         return not bool(self._errors)
 
     @property
-    def context(self):
-        return self._context
+    def serializer_context(self):
+        return self._serializer_context
 
     @property
     def config(self) -> Config:
-        if self.context and "config" in self.context:
-            return self.context["config"]
+        if self.serializer_context and "config" in self.serializer_context:
+            return self.serializer_context["config"]
         return config
 
     class Meta:
