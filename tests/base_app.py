@@ -1,4 +1,5 @@
 import typing
+
 from aiohttp import web
 
 from aiohttp_rest_framework.settings import setup_rest_framework

@@ -1,5 +1,6 @@
-import aiopg.sa
 import typing
+
+import aiopg.sa
 from aiohttp import web
 
 from tests.base_app import get_base_app
