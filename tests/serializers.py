@@ -13,4 +13,4 @@ class UserSerializer(ModelSerializer):
     created_at = fields.DateTime(dump_only=True)
 
     class Meta:
-        model = models.user
+        model = models.users

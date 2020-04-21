@@ -1,0 +1,16 @@
+{
+  "users": [
+    {
+      "name": "John Doe",
+      "email": "john@mail.com",
+      "phone": "+123456789",
+      "password": "strong_pwd"
+    },
+    {
+      "name": "Mark Twen",
+      "email": "mark@mail.com",
+      "phone": "+987654321",
+      "password": "very_pwfl"
+    }
+  ]
+}

@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import UUID
 
 meta = sa.MetaData()
 
-user = sa.Table(
+users = sa.Table(
     "users", meta,
     sa.Column("id", UUID(as_uuid=True), primary_key=True, default=uuid4),
     sa.Column("name", sa.Text, nullable=False, default=""),

@@ -147,6 +147,7 @@ class Serializer(mm.Schema):
 
     class Meta:
         ordered = True
+        model = None
 
 
 class ModelSerializer(Serializer):
