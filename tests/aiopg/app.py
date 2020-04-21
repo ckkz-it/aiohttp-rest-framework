@@ -1,9 +1,8 @@
 import aiopg.sa
 from aiohttp import web
 
-from aiohttp_rest_framework.settings import setup_rest_framework
+from tests.base_app import get_base_app
 from tests.config import postgres_url
-from tests.routes import setup_routes
 
 
 async def init_pg(a: web.Application) -> None:
@@ -16,9 +15,7 @@ async def close_pg(a: web.Application) -> None:
 
 
 async def get_app():
-    app = web.Application()
-    setup_routes(app)
-    setup_rest_framework(app)
+    app = get_base_app()
     app.on_startup.append(init_pg)
     app.on_cleanup.append(close_pg)
     return app
