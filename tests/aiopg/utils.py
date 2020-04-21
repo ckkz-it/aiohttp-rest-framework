@@ -1,10 +1,10 @@
 import json
 import pathlib
-from contextlib import contextmanager, asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 
+import aiopg.sa
 import psycopg2
 import sqlalchemy as sa
-import aiopg.sa
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 from tests import models
@@ -69,12 +69,13 @@ def drop_tables():
         meta.drop_all(bind=engine)
 
 
-def create_data_fixtures():
+async def create_data_fixtures():
     file = pathlib.Path(__file__).parent.parent / "fixtures.json"
     with open(file) as f:
         data = json.loads(f.read())
-    with sync_engine_connection() as engine:
-        for table_name, table_data in data.items():
-            table: sa.Table = getattr(models, table_name)
-            for entity in table_data:
-                engine.execute(table.insert().values(**entity))
+    async with async_engine_connection() as engine:
+        async with engine.acquire() as conn:
+            for table_name, table_data in data.items():
+                table: sa.Table = getattr(models, table_name)
+                for entity in table_data:
+                    await conn.execute(table.insert().values(**entity))

@@ -2,8 +2,8 @@ import aiopg.sa
 from aiohttp import web
 
 from aiohttp_rest_framework.settings import setup_rest_framework
-from tests.routes import setup_routes
 from tests.config import postgres_url
+from tests.routes import setup_routes
 
 
 async def init_pg(a: web.Application) -> None:
