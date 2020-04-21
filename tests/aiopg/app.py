@@ -15,8 +15,10 @@ async def close_pg(a: web.Application) -> None:
     await a["db"].wait_closed()
 
 
-app = web.Application()
-setup_routes(app)
-setup_rest_framework(app)
-app.on_startup.append(init_pg)
-app.on_cleanup.append(close_pg)
+async def get_app():
+    app = web.Application()
+    setup_routes(app)
+    setup_rest_framework(app)
+    app.on_startup.append(init_pg)
+    app.on_cleanup.append(close_pg)
+    return app
