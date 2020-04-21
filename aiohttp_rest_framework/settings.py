@@ -15,16 +15,18 @@ class Config:
             get_connection: typing.Callable = None,
             db_service: typing.Type[DatabaseServiceABC] = AioPGService,
     ):
+        if connection and get_connection:
+            msg = ("either provide `connection`, `get_connection()` or "
+                   "none of them, do not pass both")
+            raise AssertionError(msg)
+
         def _get_connection():
             return connection or app[app_connection_property]
-
-        if connection and get_connection:
-            msg = "either provide `connection` or `get_connection()`, do not pass both"
-            raise AssertionError(msg)
 
         self.get_connection = get_connection or _get_connection
         assert callable(self.get_connection), "`get_connection` has to be callable"
         self.db_service_class = db_service
+        self.app_connection_property = app_connection_property
 
 
 APP_CONFIG_KEY = "rest_framework"
