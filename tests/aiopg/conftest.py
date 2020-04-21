@@ -13,10 +13,10 @@ async def user():
         async with engine.acquire() as conn:
             query = models.users.select().limit(1)
             result: ResultProxy = await conn.execute(query)
-            yield await result.fetchone()
+            return await result.fetchone()
 
 
 @pytest.fixture
 async def client(aiohttp_client):
-    client: TestClient = await aiohttp_client(await get_app())
-    yield client
+    client: TestClient = await aiohttp_client(get_app())
+    return client

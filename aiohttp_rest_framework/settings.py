@@ -11,9 +11,15 @@ class Config:
             app: web.Application,
             *,
             connection: typing.Any = None,
+            app_connection_property: str = "db",
+            get_connection: typing.Callable = None,
             db_service: typing.Type[DatabaseServiceABC] = AioPGService,
     ):
-        self.get_connection = lambda: connection or app["db"]
+        def _get_connection():
+            return connection or app[app_connection_property]
+
+        self.get_connection = get_connection or _get_connection
+        assert callable(self.get_connection), "`get_connection` has to be callable"
         self.db_service_class = db_service
 
 
