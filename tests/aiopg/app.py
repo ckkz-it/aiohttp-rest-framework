@@ -10,7 +10,6 @@ from tests.config import postgres_url
 
 
 async def init_pg(app_conn_prop, app: web.Application) -> None:
-    print(app_conn_prop)
     app[app_conn_prop] = await aiopg.sa.create_engine(postgres_url)
 
 

@@ -77,5 +77,4 @@ async def create_data_fixtures():
         async with engine.acquire() as conn:
             for table_name, table_data in data.items():
                 table: sa.Table = getattr(models, table_name)
-                for entity in table_data:
-                    await conn.execute(table.insert().values(**entity))
+                await conn.execute(table.insert().values(table_data))

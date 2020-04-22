@@ -10,7 +10,6 @@ def test_default_config_setup():
     cfg = app[APP_CONFIG_KEY]
 
     assert hasattr(cfg, "get_connection"), "config doesn't have `get_connection` attribute"
-    assert callable(cfg.get_connection), "`get_connection` isn't callable"
 
     assert hasattr(cfg, "db_service_class"), (
         "config doesn't have `db_service_class` attribute"
