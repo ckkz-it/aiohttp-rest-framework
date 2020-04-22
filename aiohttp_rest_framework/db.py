@@ -59,18 +59,19 @@ class AioPGService(DatabaseServiceABC):
 
     async def update(
             self,
-            pk: typing.Any,
+            instance: RowProxy,
             data: typing.Mapping,
-            *,
-            pk_field: str = "id",
     ) -> RowProxy:
-        where = self.model.columns[pk_field] == pk
+        pk = self.get_pk()
+        where = self.model.columns[pk] == instance[pk]
         query = self.model.update(where).values(**data)
         await self.execute(query)
         return await self.execute(self.model.select(where), fetch="one")
 
-    async def delete(self, pk: typing.Any, *, pk_field: str = "id") -> ResultProxy:
-        query = self.model.delete(**{pk_field: pk})
+    async def delete(self, instance: RowProxy) -> ResultProxy:
+        pk = self.get_pk()
+        where = self.model.columns[pk] == instance[pk]
+        query = self.model.delete(where)
         return await self.execute(query)
 
     async def execute(
@@ -86,3 +87,6 @@ class AioPGService(DatabaseServiceABC):
                     return await result.fetchall()
                 return await result.fetchone()
             return result
+
+    def get_pk(self):
+        return self.model.primary_key.columns.keys()[0]

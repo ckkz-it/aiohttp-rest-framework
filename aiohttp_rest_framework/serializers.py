@@ -2,6 +2,7 @@ import copy
 import typing
 
 import marshmallow as mm
+from marshmallow import EXCLUDE
 
 from aiohttp_rest_framework.db import DatabaseServiceABC
 from aiohttp_rest_framework.exceptions import ValidationError
@@ -22,22 +23,28 @@ class ModelSerializerOpts(mm.SchemaOpts):
     def __init__(self, meta, ordered: bool = False):
         super().__init__(meta, ordered)
         self.model = getattr(meta, "model", None)
+        klass_name = self.__class__.__name__
+        print(klass_name)
+        assert self.model is not None or klass_name == "ModelSerializerOpts", (
+            f"{klass_name} has to include `model` attribute in it's Meta"
+        )
 
 
 class Serializer(mm.Schema):
     instance: typing.Any = None
 
-    def __init__(self, instance=None, data: typing.Any = empty, as_string: bool = False, **kwargs):
+    def __init__(self, instance=None, data: typing.Any = empty, as_text: bool = False, **kwargs):
         self.instance = instance
         if data is not empty:
             self.initial_data = data
         self.partial = kwargs.pop("partial", False)
-        self.as_string = as_string
+        self.as_text = as_text
         self._serializer_context = kwargs.pop("context", {})
+        kwargs.setdefault("unknown", EXCLUDE)  # by default exclude unknown field, like in drf
         super().__init__(**kwargs)
 
     def to_internal_value(self, data):
-        if self.as_string:
+        if self.as_text:
             return self.loads(data, partial=self.partial)
         return self.load(data, partial=self.partial)
 
@@ -155,8 +162,8 @@ class ModelSerializer(Serializer):
     OPTIONS_CLASS = ModelSerializerOpts
     opts: ModelSerializerOpts = None
 
-    async def update(self, pk: typing.Any, validated_data: typing.OrderedDict):
-        return await self.db_service.update(pk, validated_data)
+    async def update(self, instance: typing.Any, validated_data: typing.OrderedDict):
+        return await self.db_service.update(instance, validated_data)
 
     async def create(self, validated_data: typing.OrderedDict):
         return await self.db_service.create(validated_data)
