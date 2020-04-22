@@ -56,6 +56,7 @@ async def async_engine_connection():
             yield conn
     finally:
         engine.close()
+        await engine.wait_closed()
 
 
 def create_tables():

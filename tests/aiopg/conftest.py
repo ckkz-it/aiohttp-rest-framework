@@ -27,6 +27,17 @@ async def get_last_created_user():
 
 
 @pytest.fixture
+async def get_user_by_id():
+    async def _get_user_by_id(user_id):
+        async with async_engine_connection() as conn:
+            query = models.users.select(models.users.c.id == user_id)
+            result: ResultProxy = await conn.execute(query)
+            return await result.fetchone()
+
+    return _get_user_by_id
+
+
+@pytest.fixture
 async def client(aiohttp_client):
     client: TestClient = await aiohttp_client(get_app())
     return client

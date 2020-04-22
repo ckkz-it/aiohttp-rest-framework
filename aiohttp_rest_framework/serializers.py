@@ -1,8 +1,7 @@
 import copy
 import typing
 
-import marshmallow as mm
-from marshmallow import EXCLUDE
+import marshmallow as ma
 
 from aiohttp_rest_framework.db import DatabaseServiceABC
 from aiohttp_rest_framework.exceptions import ValidationError
@@ -19,18 +18,7 @@ class empty:
     pass
 
 
-class ModelSerializerOpts(mm.SchemaOpts):
-    def __init__(self, meta, ordered: bool = False):
-        super().__init__(meta, ordered)
-        self.model = getattr(meta, "model", None)
-        klass_name = self.__class__.__name__
-        print(klass_name)
-        assert self.model is not None or klass_name == "ModelSerializerOpts", (
-            f"{klass_name} has to include `model` attribute in it's Meta"
-        )
-
-
-class Serializer(mm.Schema):
+class Serializer(ma.Schema):
     instance: typing.Any = None
 
     def __init__(self, instance=None, data: typing.Any = empty, as_text: bool = False, **kwargs):
@@ -40,7 +28,7 @@ class Serializer(mm.Schema):
         self.partial = kwargs.pop("partial", False)
         self.as_text = as_text
         self._serializer_context = kwargs.pop("context", {})
-        kwargs.setdefault("unknown", EXCLUDE)  # by default exclude unknown field, like in drf
+        kwargs.setdefault("unknown", ma.EXCLUDE)  # by default exclude unknown field, like in drf
         super().__init__(**kwargs)
 
     def to_internal_value(self, data):
@@ -130,7 +118,7 @@ class Serializer(mm.Schema):
         if not hasattr(self, "_validated_data"):
             try:
                 self._validated_data = self.to_internal_value(self.get_initial())
-            except mm.ValidationError as exc:
+            except ma.ValidationError as exc:
                 self._validated_data = {}
                 self._errors = exc.messages
             else:
@@ -156,9 +144,23 @@ class Serializer(mm.Schema):
         model = None
 
 
-class ModelSerializer(Serializer):
-    _db_service: DatabaseServiceABC = None
+class ModelSerializerOpts(ma.SchemaOpts):
+    def __init__(self, meta, ordered: bool = False):
+        super().__init__(meta, ordered)
+        self.model = getattr(meta, "model", None)
 
+
+class ModelSerializerMeta(ma.schema.SchemaMeta):
+    def __new__(mcs, name, bases, attrs):
+        klass = super().__new__(mcs, name, bases, attrs)
+        if klass.__name__ != "ModelSerializer":
+            assert klass.opts.model is not None, (
+                f"{klass.__name__} has to include `model` attribute in it's Meta"
+            )
+        return klass
+
+
+class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
     OPTIONS_CLASS = ModelSerializerOpts
     opts: ModelSerializerOpts = None
 
@@ -170,7 +172,4 @@ class ModelSerializer(Serializer):
 
     @property
     def db_service(self) -> DatabaseServiceABC:
-        if not self._db_service:
-            self._db_service = \
-                self.config.db_service_class(self.config.get_connection(), self.opts.model)
-        return self._db_service
+        return self.config.db_service_class(self.config.get_connection(), self.opts.model)

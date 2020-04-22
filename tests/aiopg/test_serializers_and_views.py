@@ -50,8 +50,8 @@ async def test_retrieve_view(client: TestClient, user: RowProxy):
     assert str(user.id) == data["id"], "got wrong user"
 
 
-async def test_create_view(client: TestClient, get_last_created_user, test_user):
-    response = await client.post(f"/users", json=test_user)
+async def test_create_view(client: TestClient, get_last_created_user, test_user_data):
+    response = await client.post("/users", json=test_user_data)
     assert response.status == 201, "invalid response status code"
 
     data = await response.json()
@@ -59,4 +59,26 @@ async def test_create_view(client: TestClient, get_last_created_user, test_user)
     assert "id" in data, "user id isn't in data"
 
     user: RowProxy = await get_last_created_user()
-    assert str(user.id) == data["id"], "wrong user id"
+    assert str(user.id) == data["id"]
+    assert user.name == data["name"]
+    assert user.phone == data["phone"]
+    assert user.email == data["email"]
+
+
+async def test_update_view(client: TestClient, user: RowProxy, get_user_by_id):
+    user_data = {
+        "id": str(user.id),  # serialize uuid
+        "created_at": str(user.created_at),  # serialize datetime,
+        "name": "Updated Name",
+        "email": "updated@mail.com",
+        "phone": "+7346352401",
+    }
+    response = await client.put(f"/users/{user.id}", json=user_data)
+    assert response.status == 200, "invalid response"
+
+    response_data = await response.json()
+    updated_user = await get_user_by_id(user.id)
+    assert response_data["id"] == user_data["id"], "id shouldn't change"
+    assert response_data["name"] == user_data["name"] == updated_user.name
+    assert response_data["email"] == user_data["email"] == updated_user.email
+    assert response_data["phone"] == user_data["phone"] == updated_user.phone

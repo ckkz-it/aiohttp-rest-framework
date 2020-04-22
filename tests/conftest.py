@@ -9,7 +9,7 @@ def users_fixtures():
 
 
 @pytest.fixture
-def test_user():
+def test_user_data():
     return {
         "name": "Test User",
         "email": "test@test.com",

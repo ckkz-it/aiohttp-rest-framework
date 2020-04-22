@@ -90,7 +90,7 @@ class GenericAPIView(CorsViewMixin, web.View):
 class CreateModelMixin:
     async def create(self, *args, **kwargs):
         data = await self.request.text()
-        serializer = self.get_serializer(data=data, as_string=True)
+        serializer = self.get_serializer(data=data, as_text=True)
         serializer.is_valid(raise_exception=True)
 
         await self.perform_create(serializer)
@@ -124,9 +124,9 @@ class UpdateModelMixin:
                                          partial=self.kwargs["partial"])
         serializer.is_valid(raise_exception=True)
 
-        updated_instance = await self.perform_update(serializer)
+        await self.perform_update(serializer)
 
-        return web.json_response(self.get_serializer(updated_instance).data)
+        return web.json_response(serializer.data)
 
     def partial_update(self, *args, **kwargs):
         return self.update(*args, **kwargs)
