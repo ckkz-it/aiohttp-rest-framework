@@ -32,7 +32,7 @@ def teardown_function():
     drop_tables()
 
 
-async def test_list_model_serializer(client: TestClient):
+async def test_list_view(client: TestClient):
     response = await client.get("/users")
     assert response.status == 200, "invalid response"
     data = await response.json()
@@ -42,9 +42,21 @@ async def test_list_model_serializer(client: TestClient):
     assert user.get("password") is None, "read only field is in serializer data"
 
 
-async def test_retrieve_model_serializer(client: TestClient, user: RowProxy):
+async def test_retrieve_view(client: TestClient, user: RowProxy):
     response = await client.get(f"/users/{user.id}")
     assert response.status == 200, "invalid response"
     data = await response.json()
     assert data, "response data is empty"
     assert str(user.id) == data["id"], "got wrong user"
+
+
+async def test_create_view(client: TestClient, get_last_created_user, test_user):
+    response = await client.post(f"/users", json=test_user)
+    assert response.status == 201, "invalid response status code"
+
+    data = await response.json()
+    assert data, "response data is empty"
+    assert "id" in data, "user id isn't id data"
+
+    user: RowProxy = await get_last_created_user()
+    assert str(user.id) == data["id"], "wrong user id"

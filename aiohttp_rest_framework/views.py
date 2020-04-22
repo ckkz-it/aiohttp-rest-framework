@@ -95,7 +95,7 @@ class CreateModelMixin:
 
         await self.perform_create(serializer)
         # instance = await self.get_object()
-        return web.json_response(serializer.data)
+        return web.json_response(serializer.data, status=201)
 
     async def perform_create(self, serializer: Serializer):
         return await serializer.save()

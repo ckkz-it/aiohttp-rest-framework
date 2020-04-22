@@ -10,6 +10,7 @@ from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from tests import models
 from tests.config import db, postgres_url, postgres_url_template
 from tests.models import meta
+from tests.utils import get_fixtures_data
 
 
 @contextmanager
@@ -53,7 +54,8 @@ def sync_engine_connection() -> sa.engine.Engine:
 async def async_engine_connection():
     engine: aiopg.sa.Engine = await aiopg.sa.create_engine(postgres_url)
     try:
-        yield engine
+        async with engine.acquire() as conn:
+            yield conn
     finally:
         engine.close()
 
@@ -70,11 +72,8 @@ def drop_tables():
 
 
 async def create_data_fixtures():
-    file = pathlib.Path(__file__).parent.parent / "fixtures.json"
-    with open(file) as f:
-        data = json.loads(f.read())
-    async with async_engine_connection() as engine:
-        async with engine.acquire() as conn:
-            for table_name, table_data in data.items():
-                table: sa.Table = getattr(models, table_name)
-                await conn.execute(table.insert().values(table_data))
+    data = get_fixtures_data()
+    async with async_engine_connection() as conn:
+        for table_name, table_data in data.items():
+            table: sa.Table = getattr(models, table_name)
+            await conn.execute(table.insert().values(table_data))
