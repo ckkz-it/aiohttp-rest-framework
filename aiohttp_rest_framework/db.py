@@ -9,34 +9,35 @@ from aiohttp_rest_framework import types
 
 
 class DatabaseServiceABC(metaclass=abc.ABCMeta):
-    def __init__(self, connection, model=None):
-        self.connection = connection
-        self.model = model
-
-    @abc.abstractmethod
-    async def get(self, where: typing.Mapping = None):
+    def __init__(self, *args, **kwargs):
         pass
 
     @abc.abstractmethod
-    async def filter(self, where: typing.Mapping = None):
+    async def get(self, *args, **kwargs):
         pass
 
     @abc.abstractmethod
-    async def create(self, data: typing.Mapping):
+    async def filter(self, *args, **kwargs):
         pass
 
     @abc.abstractmethod
-    async def update(self, pk: typing.Any, data: typing.Mapping):
+    async def create(self, *args, **kwargs):
         pass
 
     @abc.abstractmethod
-    async def delete(self, pk: typing.Any):
+    async def update(self, *args, **kwargs):
+        pass
+
+    @abc.abstractmethod
+    async def delete(self, *args, **kwargs):
         pass
 
 
 class AioPGService(DatabaseServiceABC):
-    connection: Engine
-    model: Table
+    def __init__(self, connection: Engine, model: Table):
+        super().__init__()
+        self.connection = connection
+        self.model = model
 
     async def get(self, where: typing.Mapping = None) -> typing.Optional[RowProxy]:
         if where:
