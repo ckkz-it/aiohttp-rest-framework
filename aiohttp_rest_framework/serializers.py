@@ -163,6 +163,11 @@ class ModelSerializerMeta(ma.schema.SchemaMeta):
 class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
     OPTIONS_CLASS = ModelSerializerOpts
     opts: ModelSerializerOpts = None
+    serializer_field_mapping: typing.Mapping[type, type] = None
+
+    def _init_fields(self) -> None:
+        super()._init_fields()
+
 
     async def update(self, instance: typing.Any, validated_data: typing.OrderedDict):
         return await self.db_service.update(instance, validated_data)

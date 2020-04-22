@@ -9,6 +9,7 @@ from aiohttp_rest_framework import types
 
 
 class DatabaseServiceABC(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
     def __init__(self, *args, **kwargs):
         pass
 
@@ -33,7 +34,7 @@ class DatabaseServiceABC(metaclass=abc.ABCMeta):
         pass
 
 
-class AioPGService(DatabaseServiceABC):
+class AioPGSAService(DatabaseServiceABC):
     def __init__(self, connection: Engine, model: Table):
         super().__init__()
         self.connection = connection

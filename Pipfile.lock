@@ -472,10 +472,10 @@
         },
         "requirementslib": {
             "hashes": [
-                "sha256:d29a49e72f8d3b0881c3af40215247cc84c178e6a1bb478182a6cfb51e17e9e6",
-                "sha256:d853840cde15a1adacac4e00b129a55e3c5c524f4b0ac88935502dd59823823f"
+                "sha256:3b0cf0a0519fb80f102575ddaea28f1cd05e410b8d240fff51baa154d09b7a31",
+                "sha256:f7c14323f2b60681d7dccdbad525b68f67b2c43e53035764d8c64c9ff3777917"
             ],
-            "version": "==1.5.5"
+            "version": "==1.5.6"
         },
         "six": {
             "hashes": [
