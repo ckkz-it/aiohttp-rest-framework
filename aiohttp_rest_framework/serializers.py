@@ -63,8 +63,7 @@ class Serializer(mm.Schema):
         )
 
         validated_data = dict(
-            list(self.validated_data.items()) +
-            list(typing.cast(typing.Any, kwargs.items()))
+            list(self.validated_data.items()) + list(typing.cast(typing.Any, kwargs.items()))
         )
 
         if self.instance is not None:

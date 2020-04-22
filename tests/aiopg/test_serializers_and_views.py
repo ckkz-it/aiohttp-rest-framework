@@ -56,7 +56,7 @@ async def test_create_view(client: TestClient, get_last_created_user, test_user)
 
     data = await response.json()
     assert data, "response data is empty"
-    assert "id" in data, "user id isn't id data"
+    assert "id" in data, "user id isn't in data"
 
     user: RowProxy = await get_last_created_user()
     assert str(user.id) == data["id"], "wrong user id"

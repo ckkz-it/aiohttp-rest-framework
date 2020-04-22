@@ -1,5 +1,3 @@
-import json
-import pathlib
 from contextlib import asynccontextmanager, contextmanager
 
 import aiopg.sa
