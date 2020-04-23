@@ -3,13 +3,17 @@ import typing
 from aiohttp import web
 
 from aiohttp_rest_framework.db import AioPGSAService, DatabaseServiceABC
+from aiohttp_rest_framework.fields import AioPGSAInferred
 
 AIOPG_SA = "aiopg_sa"
 
 SCHEMA_TYPES = (AIOPG_SA,)
 
-schema_types_services_mapping = {
-    AIOPG_SA: AioPGSAService,
+db_orm_mappings = {
+    AIOPG_SA: {
+        "service": AioPGSAService,
+        "field": AioPGSAInferred,
+    }
 }
 
 
@@ -26,6 +30,7 @@ class Config:
         assert isinstance(app_connection_property, str), (
             "`app_connection_property` has to be a string"
         )
+        self.app_connection_property = app_connection_property
 
         assert schema_type in SCHEMA_TYPES, (
             f"`schema_type` has to be one of {', '.join(SCHEMA_TYPES)}"
@@ -36,13 +41,18 @@ class Config:
 
         self.get_connection = get_connection or _get_connection
         assert callable(self.get_connection), "`get_connection` has to be callable"
-        self.db_service_class = db_service or schema_types_services_mapping[schema_type]
-        self.app_connection_property = app_connection_property
+
+        self.db_service_class = db_service or db_orm_mappings[schema_type]["service"]
+        self.inferred_field_cls = db_orm_mappings[schema_type]["field"]
 
 
 APP_CONFIG_KEY = "rest_framework"
 
-config = None
+_config: typing.Optional[Config] = None
+
+
+def get_global_config() -> Config:
+    return _config
 
 
 def setup_rest_framework(app: web.Application, settings: typing.Mapping = None) -> None:
@@ -50,5 +60,5 @@ def setup_rest_framework(app: web.Application, settings: typing.Mapping = None) 
     app_settings = Config(app, **user_settings)
     app[APP_CONFIG_KEY] = app_settings
 
-    global config
-    config = app_settings
+    global _config
+    _config = app_settings

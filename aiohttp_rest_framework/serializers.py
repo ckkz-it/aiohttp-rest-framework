@@ -5,7 +5,7 @@ import marshmallow as ma
 
 from aiohttp_rest_framework.db import DatabaseServiceABC
 from aiohttp_rest_framework.exceptions import ValidationError
-from aiohttp_rest_framework.settings import Config, config
+from aiohttp_rest_framework.settings import Config, get_global_config
 
 
 class empty:
@@ -25,16 +25,15 @@ class Serializer(ma.Schema):
         self.instance = instance
         if data is not empty:
             self.initial_data = data
-        self.partial = kwargs.pop("partial", False)
         self.as_text = as_text
-        self._serializer_context = kwargs.pop("context", {})
-        kwargs.setdefault("unknown", ma.EXCLUDE)  # by default exclude unknown field, like in drf
+        self._serializer_context = kwargs.pop("serializer_context", {})
+        kwargs.setdefault("unknown", ma.EXCLUDE)  # by default exclude unknown fields, like in drf
         super().__init__(**kwargs)
 
     def to_internal_value(self, data):
         if self.as_text:
-            return self.loads(data, partial=self.partial)
-        return self.load(data, partial=self.partial)
+            return self.loads(data)
+        return self.load(data)
 
     def to_representation(self, instance):
         return self.dump(instance)
@@ -137,11 +136,10 @@ class Serializer(ma.Schema):
     def config(self) -> Config:
         if self.serializer_context and "config" in self.serializer_context:
             return self.serializer_context["config"]
-        return config
+        return get_global_config()
 
     class Meta:
         ordered = True
-        model = None
 
 
 class ModelSerializerOpts(ma.SchemaOpts):
@@ -163,11 +161,20 @@ class ModelSerializerMeta(ma.schema.SchemaMeta):
 class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
     OPTIONS_CLASS = ModelSerializerOpts
     opts: ModelSerializerOpts = None
-    serializer_field_mapping: typing.Mapping[type, type] = None
 
     def _init_fields(self) -> None:
         super()._init_fields()
-
+        # replace marshmallow inferred fields with database/schema specific fields
+        inferred_field_cls = self.config.inferred_field_cls
+        for field_name, field_obj in self.fields.items():
+            if isinstance(field_obj, ma.fields.Inferred):
+                inferred_field = inferred_field_cls()
+                self._bind_field(field_name, inferred_field)
+                self.fields[field_name] = inferred_field
+                if field_name in self.dump_fields:
+                    self.dump_fields[field_name] = inferred_field
+                if field_name in self.load_fields:
+                    self.load_fields[field_name] = inferred_field
 
     async def update(self, instance: typing.Any, validated_data: typing.OrderedDict):
         return await self.db_service.update(instance, validated_data)

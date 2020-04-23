@@ -1,8 +1,8 @@
-import enum
-
-import sqlalchemy as sa
-import marshmallow as ma
+import abc
 import typing
+
+import marshmallow as ma
+import sqlalchemy as sa
 
 
 class Enum(ma.fields.String):
@@ -12,8 +12,8 @@ class Enum(ma.fields.String):
     }
     by_value: bool = True
 
-    def __init__(self, enum_class: typing.Type[enum.Enum], by_value=True, **kwargs):
-        self.enum = enum_class
+    def __init__(self, enum, by_value=True, **kwargs):
+        self.enum = enum
         self.by_value = by_value
         super().__init__(**kwargs)
 
@@ -54,6 +54,59 @@ sqlalchemy_serializer_field_mapping = {
     sa.Time: ma.fields.Time,
     sa.Unicode: ma.fields.String,
     sa.UnicodeText: ma.fields.String,
-    sa.ARRAY: ma.fields.List,
-    sa.JSON: ma.fields.Dict,
 }
+
+
+class InferredABC(ma.fields.Field, metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def _build_field(self, *args, **kwargs) -> ma.fields.Field:
+        """
+        Implement getting marshmallow field based on database field
+        :return: field
+        """
+        pass
+
+
+class AioPGSAInferred(InferredABC):
+    def __init__(self, **kwargs):
+        super().__init__()
+        self.kwargs = kwargs
+
+    def _serialize(self, value, attr: typing.Optional[str], obj, **kwargs):
+        field = self._build_field(value)
+        return field._serialize(value, attr, obj, **kwargs)
+
+    def _deserialize(self, value, attr: typing.Optional[str], data, **kwargs):
+        field = self._build_field(value)
+        return field._deserialize(value, attr, data, **kwargs)
+
+    def _build_field(self, value):
+        model: sa.Table = self.root.opts.model
+        column = model.columns.get(self.name)
+        assert column is not None, (
+            f"{self.name} was not found for {self.root.__class__.__name__} serializer "
+            f"in {model.__name__} model"
+        )
+
+        field_cls = sqlalchemy_serializer_field_mapping.get(column.type)
+        if field_cls is None:
+            field_cls = self.root.TYPE_MAPPING.get(type(value))
+        if field_cls is None:
+            field_cls = ma.fields.Field
+
+        self._set_db_specific_kwargs(column)
+        field = field_cls(**self.kwargs)
+        field._bind_to_schema(self.name, self.parent)
+        return field
+
+    def _set_db_specific_kwargs(self, column: sa.Column):
+        if column.nullable:
+            self.kwargs.setdefault("allow_none", True)
+        if column.primary_key:
+            self.kwargs.setdefault("dump_only", True)
+            self.kwargs.setdefault("allow_none", False)
+        if column.default:
+            self.kwargs.setdefault("required", False)
+            self.kwargs.setdefault("missing", column.default.arg)
+        if column.server_default:
+            self.kwargs.setdefault("required", False)
