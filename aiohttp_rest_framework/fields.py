@@ -5,7 +5,7 @@ import marshmallow as ma
 import sqlalchemy as sa
 
 
-class Enum(ma.fields.String):
+class Enum(ma.fields.Field):
     default_error_messages = {
         "invalid_string": "Not a valid string.",
         "invalid_enum": "Not a valid value, has to be one of ({values}).",
@@ -17,14 +17,14 @@ class Enum(ma.fields.String):
         self.by_value = by_value
         super().__init__(**kwargs)
 
-    def _serialize(self, value, attr, obj, **kwargs):
+    def _serialize(self, value, **kwargs):
         if value is None:
             return None
         if self.by_value:
             return value.value
         return value.name
 
-    def _deserialize(self, value, attr, data, **kwargs):
+    def _deserialize(self, value, **kwargs):
         if self.by_value:
             try:
                 return self.enum(value)
@@ -33,7 +33,7 @@ class Enum(ma.fields.String):
 
         if not isinstance(value, str):
             raise self.make_error("invalid_string")
-        if hasattr(self.enum, value):
+        if not hasattr(self.enum, value):
             raise self.make_error("invalid_enum", values=", ".join(x.name for x in self.enum))
         return getattr(self.enum, value)
 

@@ -82,3 +82,17 @@ async def test_update_view(client: TestClient, user: RowProxy, get_user_by_id):
     assert response_data["name"] == user_data["name"] == updated_user.name
     assert response_data["email"] == user_data["email"] == updated_user.email
     assert response_data["phone"] == user_data["phone"] == updated_user.phone
+
+
+async def test_partial_update_view(client: TestClient, user: RowProxy, get_user_by_id):
+    user_data = {
+        "email": "updated@mail.com",
+    }
+    response = await client.patch(f"/users/{user.id}", json=user_data)
+    assert response.status == 200, "invalid response"
+
+    response_data = await response.json()
+    updated_user = await get_user_by_id(user.id)
+    assert response_data["email"] == user_data["email"] == updated_user.email
+    assert updated_user.email != user.email
+    assert response_data["name"] == user.name, "wrong field updated"
