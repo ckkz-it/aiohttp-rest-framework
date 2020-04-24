@@ -12,5 +12,24 @@
       "phone": "+987654321",
       "password": "very_pwfl"
     }
+  ],
+  "aiopg_sa_fields": [
+    {
+      "BigInteger": 100,
+      "Boolean": true,
+      "Date": "2020-01-01",
+      "DateTime": "2020-01-01 04:05:06",
+      "Enum": "test",
+      "Float": 100.5,
+      "Integer": 100,
+      "Interval": "3 hours 20 minutes",
+      "Numeric": 10.22,
+      "SmallInteger": 1,
+      "String": "string",
+      "Text": "text",
+      "Time": "04:05:06",
+      "Unicode": "unicode",
+      "UnicodeText": "unicode text"
+    }
   ]
 }

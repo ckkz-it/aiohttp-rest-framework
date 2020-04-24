@@ -1,7 +1,7 @@
 import enum
 
-import pytest
 import marshmallow as ma
+import pytest
 
 from aiohttp_rest_framework.fields import Enum
 

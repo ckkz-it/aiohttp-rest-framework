@@ -3,6 +3,9 @@ import typing
 
 import marshmallow as ma
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
+
+from aiohttp_rest_framework.utils import ClassLookupDict
 
 
 class Enum(ma.fields.Field):
@@ -17,14 +20,14 @@ class Enum(ma.fields.Field):
         self.by_value = by_value
         super().__init__(**kwargs)
 
-    def _serialize(self, value, **kwargs):
+    def _serialize(self, value, *args, **kwargs):
         if value is None:
             return None
         if self.by_value:
             return value.value
         return value.name
 
-    def _deserialize(self, value, **kwargs):
+    def _deserialize(self, value, *args, **kwargs):
         if self.by_value:
             try:
                 return self.enum(value)
@@ -38,7 +41,7 @@ class Enum(ma.fields.Field):
         return getattr(self.enum, value)
 
 
-sqlalchemy_serializer_field_mapping = {
+sa_ma_field_mapping = {
     sa.BigInteger: ma.fields.Integer,
     sa.Boolean: ma.fields.Boolean,
     sa.Date: ma.fields.Date,
@@ -56,6 +59,13 @@ sqlalchemy_serializer_field_mapping = {
     sa.UnicodeText: ma.fields.String,
 }
 
+sa_ma_pg_field_mapping = {
+    **sa_ma_field_mapping,
+    UUID: ma.fields.UUID,
+    ARRAY: ma.fields.List,
+    JSON: ma.fields.Dict,
+}
+
 
 class InferredABC(ma.fields.Field, metaclass=abc.ABCMeta):
     @abc.abstractmethod
@@ -70,32 +80,54 @@ class InferredABC(ma.fields.Field, metaclass=abc.ABCMeta):
 class AioPGSAInferred(InferredABC):
     def __init__(self, **kwargs):
         super().__init__()
+        # `self.model` attribute is for standalone use, primarily for tests,
+        # most likely you won't use it your application
+        # when used with serializer, `self.root` is not defined here yet
+        # so leave it until `self._build_field()` is called to define model
+        self.model: sa.Table = kwargs.pop("model", None)
         self.kwargs = kwargs
+        self._field: typing.Optional[typing.Type[ma.fields.Field]] = None
 
     def _serialize(self, value, attr: typing.Optional[str], obj, **kwargs):
-        field = self._build_field(value)
-        return field._serialize(value, attr, obj, **kwargs)
+        if self._field is None:
+            self._field = self._build_field(value)
+        return self._field._serialize(value, attr, obj, **kwargs)
 
     def _deserialize(self, value, attr: typing.Optional[str], data, **kwargs):
-        field = self._build_field(value)
-        return field._deserialize(value, attr, data, **kwargs)
+        if self._field is None:
+            self._field = self._build_field(value)
+        return self._field._deserialize(value, attr, data, **kwargs)
 
     def _build_field(self, value):
-        model: sa.Table = self.root.opts.model
+        assert self.parent is not None or self.model is not None, (
+            "When use field in standalone mode (without binding to serializer) "
+            "you have to pass `model` kwarg on field initialization"
+        )
+        model: sa.Table
+        if self.model is not None:
+            model = self.model
+        else:
+            model = self.root.opts.model
         column = model.columns.get(self.name)
         assert column is not None, (
             f"{self.name} was not found for {self.root.__class__.__name__} serializer "
             f"in {model.__name__} model"
         )
 
-        field_cls = sqlalchemy_serializer_field_mapping.get(column.type)
-        if field_cls is None:
+        mapping = ClassLookupDict(sa_ma_pg_field_mapping)
+        field_cls = mapping.get(column.type)
+        if field_cls is None and self.root:
             field_cls = self.root.TYPE_MAPPING.get(type(value))
         if field_cls is None:
             field_cls = ma.fields.Field
 
         self._set_db_specific_kwargs(column)
-        field = field_cls(**self.kwargs)
+        if field_cls is Enum:
+            enum_name = column.type.enums[0]
+            enum = column.type.enum_class[enum_name]
+            field = typing.cast(typing.Type[Enum], field_cls)(enum, **self.kwargs)
+        else:
+            field = field_cls(**self.kwargs)
         field._bind_to_schema(self.name, self.parent)
         return field
 

@@ -40,10 +40,7 @@ class GenericAPIView(CorsViewMixin, web.View):
     @property
     def model(self):
         serializer_class = self.get_serializer_class()
-        assert serializer_class.Meta.model is not None, (
-            f"`model` attribute for {serializer_class.__class__.__name__}'s `Meta` has to be set"
-        )
-        return self.get_serializer_class().Meta.model
+        return serializer_class.opts.model
 
     def get_serializer_class(self):
         assert self.serializer_class is not None, (
@@ -79,12 +76,12 @@ class GenericAPIView(CorsViewMixin, web.View):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         where = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
         obj = await self.db_service.get(where)
-        if not obj:
+        if obj is None:
             raise web.HTTPNotFound()
         return obj
 
     async def get_list(self):
-        return await self.db_service.filter(None)
+        return await self.db_service.filter()
 
 
 class CreateModelMixin:
@@ -94,7 +91,6 @@ class CreateModelMixin:
         serializer.is_valid(raise_exception=True)
 
         await self.perform_create(serializer)
-        # instance = await self.get_object()
         return web.json_response(serializer.data, status=201)
 
     async def perform_create(self, serializer: Serializer):
