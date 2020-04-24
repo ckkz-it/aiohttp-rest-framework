@@ -1,3 +1,4 @@
+import asyncio
 import copy
 import typing
 
@@ -206,11 +207,16 @@ class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
                     self.load_fields[field_name] = inferred_field
 
     async def update(self, instance: typing.Any, validated_data: typing.OrderedDict):
-        return await self.db_service.update(instance, validated_data)
+        db_service = await self.get_db_service()
+        return await db_service.update(instance, validated_data)
 
     async def create(self, validated_data: typing.OrderedDict):
-        return await self.db_service.create(validated_data)
+        db_service = await self.get_db_service()
+        return await db_service.create(validated_data)
 
-    @property
-    def db_service(self) -> DatabaseServiceABC:
-        return self.config.db_service_class(self.config.get_connection(), self.opts.model)
+    async def get_db_service(self) -> DatabaseServiceABC:
+        if asyncio.iscoroutinefunction(self.config.get_connection):
+            connection = await self.config.get_connection()
+        else:
+            connection = self.config.get_connection()
+        return self.config.db_service_class(connection, self.opts.model)

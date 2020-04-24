@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 from aiohttp_rest_framework.settings import APP_CONFIG_KEY
@@ -26,10 +28,20 @@ def test_wrong_get_connection_config_setup():
 
 def test_config_setup_with_custom_get_connection():
     get_conn = lambda: "some connection"
-    rest_config = {
-        "get_connection": get_conn,
-    }
+    rest_config = {"get_connection": get_conn}
     app = get_base_app(rest_config)
     cfg = app[APP_CONFIG_KEY]
     assert cfg.get_connection is get_conn, "wrong custom `get_connection` applied to settings"
     assert cfg.get_connection() == get_conn()
+
+
+async def test_config_setup_with_async_get_connection():
+    async def get_conn():
+        return "some connection"
+
+    rest_config = {"get_connection": get_conn}
+    app = get_base_app(rest_config)
+    cfg = app[APP_CONFIG_KEY]
+    assert cfg.get_connection is get_conn, "wrong custom `get_connection` applied to settings"
+    assert asyncio.iscoroutinefunction(cfg.get_connection), "`get_connection` is not async"
+    assert await cfg.get_connection() == await get_conn()
