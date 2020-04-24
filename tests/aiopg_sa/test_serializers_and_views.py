@@ -3,7 +3,9 @@ import asyncio
 from aiohttp.test_utils import TestClient
 from aiopg.sa.result import RowProxy
 
-from tests.aiopg.utils import (
+from aiohttp_rest_framework.serializers import ModelSerializer
+from tests import models
+from tests.aiopg_sa.utils import (
     create_data_fixtures,
     create_pg_db,
     create_tables,
@@ -96,3 +98,18 @@ async def test_partial_update_view(client: TestClient, user: RowProxy, get_user_
     assert response_data["email"] == user_data["email"] == updated_user.email
     assert updated_user.email != user.email
     assert response_data["name"] == user.name, "wrong field updated"
+
+
+class UserWithFieldsALLSerializer(ModelSerializer):
+    class Meta:
+        model = models.users
+        fields = "__all__"
+
+
+async def test_fields_all_for_serializer(user: RowProxy):
+    serializer = UserWithFieldsALLSerializer(user)
+    data = serializer.data
+    for field_name in data:
+        assert field_name in models.users.columns, (
+            f"unknown serialized {field_name} for users model"
+        )
