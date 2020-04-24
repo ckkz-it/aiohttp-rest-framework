@@ -18,7 +18,29 @@ class empty:
     pass
 
 
+class Meta:
+    pass
+
+
+class SerializerOpts(ma.SchemaOpts):
+    def __init__(self, meta, ordered: bool = True):
+        if not hasattr(meta, "unknown"):
+            meta.unknown = ma.EXCLUDE  # by default exclude unknown fields, like in drf
+        super().__init__(meta, ordered)
+
+
+class SerializerMeta(ma.schema.SchemaMeta):
+    def __new__(mcs, name, bases, attrs):
+        meta: type = attrs.get("Meta", Meta)
+        meta.ordered = getattr(meta, "ordered", True)
+        attrs["Meta"] = meta
+        return super().__new__(mcs, name, bases, attrs)
+
+
 class Serializer(ma.Schema):
+    OPTIONS_CLASS = SerializerOpts
+    opts: SerializerOpts = None
+
     instance: typing.Any = None
 
     def __init__(self, instance=None, data: typing.Any = empty, as_text: bool = False, **kwargs):
@@ -27,7 +49,6 @@ class Serializer(ma.Schema):
             self.initial_data = data
         self.as_text = as_text
         self._serializer_context = kwargs.pop("serializer_context", {})
-        kwargs.setdefault("unknown", ma.EXCLUDE)  # by default exclude unknown fields, like in drf
         super().__init__(**kwargs)
 
     def to_internal_value(self, data):
@@ -138,23 +159,31 @@ class Serializer(ma.Schema):
             return self.serializer_context["config"]
         return get_global_config()
 
-    class Meta:
-        ordered = True
 
-
-class ModelSerializerOpts(ma.SchemaOpts):
-    def __init__(self, meta, ordered: bool = False):
+class ModelSerializerOpts(SerializerOpts):
+    def __init__(self, meta, ordered: bool = True):
         super().__init__(meta, ordered)
         self.model = getattr(meta, "model", None)
 
 
-class ModelSerializerMeta(ma.schema.SchemaMeta):
+class ModelSerializerMeta(SerializerMeta):
     def __new__(mcs, name, bases, attrs):
+        meta: type = attrs.get("Meta")
+        is_fields_all = False
+        if meta and hasattr(meta, "fields"):
+            if meta.fields == "__all__":
+                is_fields_all = True
+                del meta.fields
+                attrs["Meta"] = meta
+
         klass = super().__new__(mcs, name, bases, attrs)
-        if klass.__name__ != "ModelSerializer":
+        if name != "ModelSerializer":
             assert klass.opts.model is not None, (
-                f"{klass.__name__} has to include `model` attribute in it's Meta"
+                f"{name} has to include `model` attribute in it's Meta"
             )
+            if is_fields_all:
+                all_fields = tuple(str(column.name) for column in klass.opts.model.columns)
+                klass.opts.fields = all_fields
         return klass
 
 
