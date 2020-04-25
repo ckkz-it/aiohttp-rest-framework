@@ -1,6 +1,8 @@
 import inspect
 import typing
 
+import sqlalchemy as sa
+
 C1 = typing.TypeVar("C1")
 C2 = typing.TypeVar("C2")
 
@@ -41,3 +43,7 @@ class ClassLookupDict(typing.Generic[C1, C2]):
             return True
         except KeyError:
             return False
+
+
+def get_all_model_fields_sa(model: sa.Table) -> typing.Tuple[str]:
+    return tuple(str(column.name) for column in model.columns)

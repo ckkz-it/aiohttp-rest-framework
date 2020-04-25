@@ -184,9 +184,7 @@ class ModelSerializerMeta(SerializerMeta):
             assert klass.opts.model is not None, (
                 f"{name} has to include `model` attribute in it's Meta"
             )
-            if is_fields_all:
-                all_fields = tuple(str(column.name) for column in klass.opts.model.columns)
-                klass.opts.fields = all_fields
+            klass._is_fields_all = is_fields_all
         return klass
 
 
@@ -195,6 +193,9 @@ class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
     opts: ModelSerializerOpts = None
 
     def _init_fields(self) -> None:
+        if self._is_fields_all:
+            # replace `fields = "__all__"` with actual model fields
+            self.opts.fields = self._get_all_model_fields(self.opts.model)
         super()._init_fields()
         # replace marshmallow inferred fields with database/schema specific fields
         inferred_field_builder = self.config.inferred_field_builder
@@ -209,6 +210,9 @@ class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
                     self.dump_fields[field_name] = inferred_field
                 if field_name in self.load_fields:
                     self.load_fields[field_name] = inferred_field
+
+    def _get_all_model_fields(self, model) -> typing.Union[typing.List[str], typing.Tuple[str]]:
+        return self.config.get_all_model_fields(model)
 
     async def update(self, instance: typing.Any, validated_data: typing.OrderedDict):
         db_service = await self.get_db_service()

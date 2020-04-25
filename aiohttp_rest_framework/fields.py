@@ -141,7 +141,7 @@ class AioPGSAInferredFieldBuilder(InferredFieldBuilderABC):
     def _set_field_specific_kwargs(self, kwargs: dict, field_cls: typing.Type[ma.fields.Field],
                                    column: sa.Column):
         if field_cls is Enum:  # for `Enum` we have to point which enum class is being used
-            if len(column.type.enumns) > 1:
+            if len(column.type.enums) > 1:
                 # @todo: implement support
                 msg = (
                     "aiohttp-rest-framework does not support postgres `Enum` field "
