@@ -3,7 +3,7 @@ import typing
 from aiohttp import web
 
 from aiohttp_rest_framework.db import AioPGSAService, DatabaseServiceABC
-from aiohttp_rest_framework.fields import AioPGSAInferred
+from aiohttp_rest_framework.fields import AioPGSAInferredFieldBuilder
 
 AIOPG_SA = "aiopg_sa"
 
@@ -12,7 +12,7 @@ SCHEMA_TYPES = (AIOPG_SA,)
 db_orm_mappings = {
     AIOPG_SA: {
         "service": AioPGSAService,
-        "field": AioPGSAInferred,
+        "field_builder": AioPGSAInferredFieldBuilder,
     }
 }
 
@@ -43,7 +43,7 @@ class Config:
         assert callable(self.get_connection), "`get_connection` has to be callable"
 
         self.db_service_class = db_service or db_orm_mappings[schema_type]["service"]
-        self.inferred_field_cls = db_orm_mappings[schema_type]["field"]
+        self.inferred_field_builder = db_orm_mappings[schema_type]["field_builder"]
 
 
 APP_CONFIG_KEY = "rest_framework"

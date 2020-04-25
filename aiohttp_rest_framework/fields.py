@@ -1,9 +1,11 @@
 import abc
 import typing
+from functools import partial
 
 import marshmallow as ma
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID as PgUUID
+from sqlalchemy.sql.type_api import TypeEngine
 
 from aiohttp_rest_framework.utils import ClassLookupDict
 
@@ -41,7 +43,22 @@ class Enum(ma.fields.Field):
         return getattr(self.enum, value)
 
 
-sa_ma_field_mapping = {
+class UUID(ma.fields.UUID):
+    def __init__(self, **kwargs):
+        self.as_uuid = kwargs.pop("as_uuid", True)  # support sqlalchemy's postgres uuid `as_uuid`
+        super().__init__(**kwargs)
+
+    def _deserialize(self, value, attr, data, **kwargs):
+        # Keep validation from marshmallow, but stringify field if `as_uuid=False`
+        uuid = super()._deserialize(value, attr, data, **kwargs)
+        if self.as_uuid:
+            return uuid
+        return str(uuid)
+
+
+SASerializerFieldMapping = typing.Dict[typing.Type[TypeEngine], typing.Type[ma.fields.Field]]
+
+sa_ma_field_mapping: SASerializerFieldMapping = {
     sa.BigInteger: ma.fields.Integer,
     sa.Boolean: ma.fields.Boolean,
     sa.Date: ma.fields.Date,
@@ -59,86 +76,81 @@ sa_ma_field_mapping = {
     sa.UnicodeText: ma.fields.String,
 }
 
-sa_ma_pg_field_mapping = {
+sa_ma_pg_field_mapping: SASerializerFieldMapping = {
     **sa_ma_field_mapping,
-    UUID: ma.fields.UUID,
+    PgUUID: UUID,
     ARRAY: ma.fields.List,
     JSON: ma.fields.Dict,
 }
 
 
-class InferredABC(ma.fields.Field, metaclass=abc.ABCMeta):
+class InferredFieldBuilderABC(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def _build_field(self, *args, **kwargs) -> ma.fields.Field:
+    def build(self, *args, **kwargs) -> ma.fields.Field:
         """
-        Implement getting marshmallow field based on database field
+        Implement building marshmallow field based on database field
         :return: field
         """
         pass
 
 
-class AioPGSAInferred(InferredABC):
-    def __init__(self, **kwargs):
-        super().__init__()
-        # `self.model` attribute is for standalone use, primarily for tests,
-        # most likely you won't use it your application
-        # when used with serializer, `self.root` is not defined here yet
-        # so leave it until `self._build_field()` is called to define model
-        self.model: sa.Table = kwargs.pop("model", None)
-        self.kwargs = kwargs
-        self._field: typing.Optional[typing.Type[ma.fields.Field]] = None
+class AioPGSAInferredFieldBuilder(InferredFieldBuilderABC):
+    def __init__(self, name: str, serializer=None, model: sa.Table = None):
+        self.name = name
+        self.serializer = serializer
+        self.model = model
 
-    def _serialize(self, value, attr: typing.Optional[str], obj, **kwargs):
-        if self._field is None:
-            self._field = self._build_field(value)
-        return self._field._serialize(value, attr, obj, **kwargs)
-
-    def _deserialize(self, value, attr: typing.Optional[str], data, **kwargs):
-        if self._field is None:
-            self._field = self._build_field(value)
-        return self._field._deserialize(value, attr, data, **kwargs)
-
-    def _build_field(self, value):
-        assert self.parent is not None or self.model is not None, (
+    def build(self, **kwargs):
+        assert self.serializer is not None or self.model is not None, (
             "When use field in standalone mode (without binding to serializer) "
             "you have to pass `model` kwarg on field initialization"
         )
-        model: sa.Table
-        if self.model is not None:
-            model = self.model
-        else:
-            model = self.root.opts.model
+        model = self.model if self.model is not None else self.serializer.opts.model
         column = model.columns.get(self.name)
         assert column is not None, (
-            f"{self.name} was not found for {self.root.__class__.__name__} serializer "
+            f"{self.name} was not found for {self.serializer.__class__.__name__} serializer "
             f"in {model.__name__} model"
         )
 
         mapping = ClassLookupDict(sa_ma_pg_field_mapping)
-        field_cls = mapping.get(column.type)
-        if field_cls is None and self.root:
-            field_cls = self.root.TYPE_MAPPING.get(type(value))
-        if field_cls is None:
-            field_cls = ma.fields.Field
+        field_cls = mapping.get(column.type, ma.fields.Inferred)
 
-        self._set_db_specific_kwargs(column)
-        if field_cls is Enum:
-            enum_name = column.type.enums[0]
-            enum = column.type.enum_class[enum_name]
-            field = typing.cast(typing.Type[Enum], field_cls)(enum, **self.kwargs)
-        else:
-            field = field_cls(**self.kwargs)
-        field._bind_to_schema(self.name, self.parent)
+        self._set_db_specific_kwargs(kwargs, column)
+        self._set_field_specific_kwargs(kwargs, field_cls, column)
+        field = field_cls(**kwargs)
         return field
 
-    def _set_db_specific_kwargs(self, column: sa.Column):
+    def _set_db_specific_kwargs(self, kwargs: dict, column: sa.Column):
         if column.nullable:
-            self.kwargs.setdefault("allow_none", True)
+            kwargs.setdefault("allow_none", True)
         if column.primary_key:
-            self.kwargs.setdefault("dump_only", True)
-            self.kwargs.setdefault("allow_none", False)
+            kwargs.setdefault("dump_only", True)
+            kwargs.setdefault("allow_none", False)
         if column.default:
-            self.kwargs.setdefault("required", False)
-            self.kwargs.setdefault("missing", column.default.arg)
+            kwargs.setdefault("required", False)
+            kwargs.setdefault("dump_only", True)
+            default = column.default.arg
+            if callable(default):
+                # sqlalchemy wraps callable into lambdas which accepts context
+                # strip this context argument
+                default = partial(default, {})
+            kwargs.setdefault("missing", default)
         if column.server_default:
-            self.kwargs.setdefault("required", False)
+            kwargs.setdefault("required", False)
+
+    def _set_field_specific_kwargs(self, kwargs: dict, field_cls: typing.Type[ma.fields.Field],
+                                   column: sa.Column):
+        if field_cls is Enum:  # for `Enum` we have to point which enum class is being used
+            if len(column.type.enumns) > 1:
+                # @todo: implement support
+                msg = (
+                    "aiohttp-rest-framework does not support postgres `Enum` field "
+                    "with multiple enum classes"
+                )
+                raise ValueError(msg)
+            enum_name = column.type.enums[0]
+            enum = column.type.enum_class[enum_name]
+            kwargs["enum"] = enum
+
+        if field_cls is UUID:
+            kwargs["as_uuid"] = column.type.as_uuid

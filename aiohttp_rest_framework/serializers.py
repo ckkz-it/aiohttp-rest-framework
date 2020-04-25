@@ -54,7 +54,8 @@ class Serializer(ma.Schema):
 
     def to_internal_value(self, data):
         if self.as_text:
-            return self.loads(data)
+            data = self.opts.render_module.loads(data)
+
         return self.load(data)
 
     def to_representation(self, instance):
@@ -195,10 +196,12 @@ class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
     def _init_fields(self) -> None:
         super()._init_fields()
         # replace marshmallow inferred fields with database/schema specific fields
-        inferred_field_cls = self.config.inferred_field_cls
+        inferred_field_builder = self.config.inferred_field_builder
         for field_name, field_obj in self.fields.items():
             if isinstance(field_obj, ma.fields.Inferred):
-                inferred_field = inferred_field_cls()
+                inferred_field = inferred_field_builder(
+                    name=field_name, serializer=self, model=self.opts.model
+                ).build()
                 self._bind_field(field_name, inferred_field)
                 self.fields[field_name] = inferred_field
                 if field_name in self.dump_fields:

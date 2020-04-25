@@ -1,8 +1,11 @@
 import inspect
 import typing
 
+C1 = typing.TypeVar("C1")
+C2 = typing.TypeVar("C2")
 
-class ClassLookupDict:
+
+class ClassLookupDict(typing.Generic[C1, C2]):
     """
     Takes a dictionary with classes as keys.
     Lookups against this object will traverses the object's inheritance
@@ -10,10 +13,10 @@ class ClassLookupDict:
     from the dictionary.
     """
 
-    def __init__(self, mapping: typing.Dict[type, type]):
+    def __init__(self, mapping: typing.Dict[C1, C2]):
         self.mapping = mapping
 
-    def __getitem__(self, key) -> type:
+    def __getitem__(self, key) -> C2:
         base_class = key.__class__
         for cls in inspect.getmro(base_class):
             if cls in self.mapping:
@@ -23,7 +26,7 @@ class ClassLookupDict:
     def __setitem__(self, key, value) -> None:
         self.mapping[key] = value
 
-    def get(self, key, default=None) -> typing.Optional[type]:
+    def get(self, key: C1, default=None) -> typing.Optional[C2]:
         try:
             return self.__getitem__(key)
         except KeyError:
