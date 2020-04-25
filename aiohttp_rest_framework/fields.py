@@ -125,10 +125,9 @@ class AioPGSAInferredFieldBuilder(InferredFieldBuilderABC):
             kwargs.setdefault("allow_none", True)
         if column.primary_key:
             kwargs.setdefault("dump_only", True)
-            kwargs.setdefault("allow_none", False)
-        if column.default:
             kwargs.setdefault("required", False)
-            kwargs.setdefault("dump_only", True)
+        if column.default and not column.primary_key:
+            kwargs.setdefault("required", False)
             default = column.default.arg
             if callable(default):
                 # sqlalchemy wraps callable into lambdas which accepts context

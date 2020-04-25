@@ -6,6 +6,9 @@ from aiohttp_rest_framework.db import AioPGSAService, DatabaseServiceABC
 from aiohttp_rest_framework.fields import AioPGSAInferredFieldBuilder
 from aiohttp_rest_framework.utils import get_all_model_fields_sa
 
+__all__ = ["AIOPG_SA", "SCHEMA_TYPES", "Config", "APP_CONFIG_KEY", "setup_rest_framework",
+           "get_global_config"]
+
 AIOPG_SA = "aiopg_sa"
 
 SCHEMA_TYPES = (AIOPG_SA,)

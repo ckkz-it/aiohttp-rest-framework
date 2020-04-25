@@ -56,8 +56,7 @@ class Serializer(ma.Schema):
 
     def to_internal_value(self, data):
         if self.as_text:
-            data = self.opts.render_module.loads(data)
-
+            return self.loads(data)
         return self.load(data)
 
     def to_representation(self, instance):
