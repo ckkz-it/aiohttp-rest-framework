@@ -39,6 +39,8 @@ class SerializerMeta(ma.schema.SchemaMeta):
 
 
 class Serializer(ma.Schema):
+    _config: Config = None
+
     OPTIONS_CLASS = SerializerOpts
     opts: SerializerOpts = None
 
@@ -157,9 +159,12 @@ class Serializer(ma.Schema):
 
     @property
     def config(self) -> Config:
-        if self.serializer_context and "config" in self.serializer_context:
-            return self.serializer_context["config"]
-        return get_global_config()
+        if not self._config:
+            if self.serializer_context and "config" in self.serializer_context:
+                self._config = self.serializer_context["config"]
+            else:
+                self._config = get_global_config()
+        return self._config
 
 
 class ModelSerializerOpts(SerializerOpts):
@@ -212,6 +217,7 @@ class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
                     self.load_fields[field_name] = inferred_field
 
     def _get_all_model_fields(self, model) -> typing.Union[typing.List[str], typing.Tuple[str]]:
+        """ Override this method for custom logic getting model fields when __all__ specified """
         return self.config.get_all_model_fields(model)
 
     async def update(self, instance: typing.Any, validated_data: typing.OrderedDict):
