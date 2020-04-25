@@ -80,7 +80,7 @@ class AioPGSAService(DatabaseServiceABC):
             query: typing.Any,
             *,
             fetch: typing.Optional[types.Fetch] = None,
-    ) -> types.ExecuteResultAioPg:
+    ) -> types.ExecuteResultAioPgSA:
         async with self.connection.acquire() as conn:
             result: ResultProxy = await conn.execute(query)
             if fetch is not None:
@@ -89,5 +89,12 @@ class AioPGSAService(DatabaseServiceABC):
                 return await result.fetchone()
             return result
 
-    def get_pk(self):
-        return self.model.primary_key.columns.keys()[0]
+    def get_pk(self) -> str:
+        """
+        Take any (first) primary key even if there are many,
+        it doesn't matter when we just need to get object for update/delete
+
+        :return: `self.model`'s primary key
+        """
+        pks = self.model.primary_key.columns.keys()
+        return pks[0]
