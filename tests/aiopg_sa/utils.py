@@ -51,12 +51,8 @@ def sync_engine_connection() -> sa.engine.Engine:
 @asynccontextmanager
 async def async_engine_connection():
     engine: aiopg.sa.Engine = await aiopg.sa.create_engine(postgres_url)
-    try:
-        async with engine.acquire() as conn:
-            yield conn
-    finally:
-        engine.close()
-        await engine.wait_closed()
+    async with engine.acquire() as conn:
+        yield conn
 
 
 def create_tables():

@@ -42,9 +42,8 @@ class AioPGSASerializer(ModelSerializer):
 
 
 async def test_aiopg_sa_inferred_field_serialization(aiopg_sa_instance: RowProxy):
-    reversed_class_lookup_dict = reversed(ClassLookupDict(sa_ma_pg_field_mapping))
+    reversed_field_mapping = reversed(ClassLookupDict(sa_ma_pg_field_mapping))
     serializer = AioPGSASerializer(aiopg_sa_instance)
     assert serializer.data
-    for _, field in serializer.fields.items():
-        actual_field = field._field
-        assert actual_field in reversed_class_lookup_dict
+    for field in serializer.fields.values():
+        assert field in reversed_field_mapping

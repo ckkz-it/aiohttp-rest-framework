@@ -63,14 +63,13 @@ class AioPGSAService(DatabaseServiceABC):
             instance: RowProxy,
             data: typing.Mapping,
     ) -> RowProxy:
-        pk = self.get_pk()
+        pk = self._get_pk()
         where = self.model.columns[pk] == instance[pk]
-        query = self.model.update(where).values(**data)
-        await self.execute(query)
-        return await self.execute(self.model.select(where), fetch="one")
+        query = self.model.update(where).values(**data).returning(*self.model.columns)
+        return await self.execute(query, fetch="one")
 
     async def delete(self, instance: RowProxy) -> ResultProxy:
-        pk = self.get_pk()
+        pk = self._get_pk()
         where = self.model.columns[pk] == instance[pk]
         query = self.model.delete(where)
         return await self.execute(query)
@@ -89,7 +88,7 @@ class AioPGSAService(DatabaseServiceABC):
                 return await result.fetchone()
             return result
 
-    def get_pk(self) -> str:
+    def _get_pk(self) -> str:
         """
         Take any (first) primary key even if there are many,
         it doesn't matter when we just need to get object for update/delete

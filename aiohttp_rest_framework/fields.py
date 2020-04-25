@@ -4,7 +4,8 @@ from functools import partial
 
 import marshmallow as ma
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID as PgUUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSON
+from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.sql.type_api import TypeEngine
 
 from aiohttp_rest_framework.utils import ClassLookupDict

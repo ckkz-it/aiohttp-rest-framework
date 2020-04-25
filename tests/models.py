@@ -7,6 +7,11 @@ from sqlalchemy.dialects.postgresql import UUID
 
 meta = sa.MetaData()
 
+
+def stringified_uuid():
+    return str(uuid4())
+
+
 users = sa.Table(
     "users", meta,
     sa.Column("id", UUID(as_uuid=True), primary_key=True, default=uuid4),
@@ -15,6 +20,11 @@ users = sa.Table(
     sa.Column("phone", sa.Text, nullable=False, default=""),
     sa.Column("password", sa.Text, nullable=False),
     sa.Column("created_at", sa.DateTime, nullable=False, default=datetime.datetime.utcnow),
+)
+
+companies = sa.Table(
+    "companies", meta,
+    sa.Column("id", UUID(as_uuid=True), primary_key=True, default=uuid4),
 )
 
 
@@ -26,6 +36,7 @@ aiopg_sa_fields = sa.Table(
     "aiopg_sa_fields", meta,
     sa.Column("UUID", UUID(as_uuid=True), primary_key=True, default=uuid4),
 
+    sa.Column("StringifiedUUID", UUID, default=stringified_uuid),
     sa.Column("BigInteger", sa.BigInteger, nullable=True),
     sa.Column("Boolean", sa.Boolean, nullable=True),
     sa.Column("Date", sa.Date, nullable=True),

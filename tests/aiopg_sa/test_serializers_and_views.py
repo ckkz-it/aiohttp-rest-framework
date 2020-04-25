@@ -106,10 +106,21 @@ class UserWithFieldsALLSerializer(ModelSerializer):
         fields = "__all__"
 
 
-async def test_fields_all_for_serializer(user: RowProxy):
+# use `client` here to initialize app's db connection property
+async def test_fields_all_for_serializer(user: RowProxy, users_fixtures, client):
     serializer = UserWithFieldsALLSerializer(user)
-    data = serializer.data
-    for field_name in data:
+    for field_name in serializer.data:
         assert field_name in models.users.columns, (
-            f"unknown serialized {field_name} for users model"
+            f"unknown serialized field '{field_name}' for users model"
+        )
+
+    user_data = users_fixtures[0]
+    user_data["email"] = "new@mail.com"  # emails are unique, change to any non existent
+    serializer = UserWithFieldsALLSerializer(data=user_data)
+    serializer.is_valid(raise_exception=True)
+    assert serializer.validated_data
+    await serializer.save()
+    for field_name in serializer.data:
+        assert field_name in models.users.columns, (
+            f"unknown serialized field '{field_name}' for users model"
         )
