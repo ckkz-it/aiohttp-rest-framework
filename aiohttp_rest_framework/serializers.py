@@ -166,6 +166,7 @@ class ModelSerializerOpts(SerializerOpts):
     def __init__(self, meta, ordered: bool = True):
         super().__init__(meta, ordered)
         self.model = getattr(meta, "model", None)
+        self.abstract = getattr(meta, "abstract", False)
 
 
 class ModelSerializerMeta(SerializerMeta):
@@ -179,7 +180,7 @@ class ModelSerializerMeta(SerializerMeta):
                 attrs["Meta"] = meta
 
         klass = super().__new__(mcs, name, bases, attrs)
-        if name != "ModelSerializer":
+        if not klass.opts.abstract:  # if not abstract, has to specify model
             assert klass.opts.model is not None, (
                 f"{name} has to include `model` attribute in it's Meta"
             )
@@ -223,3 +224,6 @@ class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
         else:
             connection = self.config.get_connection()
         return self.config.db_service_class(connection, self.opts.model)
+
+    class Meta:
+        abstract = True
