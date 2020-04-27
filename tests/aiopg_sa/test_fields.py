@@ -1,5 +1,6 @@
 import asyncio
 
+import pytest
 from aiopg.sa.result import RowProxy
 
 from aiohttp_rest_framework.fields import sa_ma_pg_field_mapping
@@ -47,3 +48,15 @@ async def test_aiopg_sa_inferred_field_serialization(aiopg_sa_instance: RowProxy
     assert serializer.data
     for field in serializer.fields.values():
         assert field in reversed_field_mapping
+
+
+# pass here client to initialize app's db property (will be needed to create instance)
+# @pytest.mark.parametrize("interval", [
+#     "3 hours 2 minutes 3 seconds", "3 hours 3 seconds", 86400
+# ])
+async def test_aiopg_sa_inferred_field_deserialization(get_fixtures_by_name, client):
+    sa_fields_data = get_fixtures_by_name("aiopg_sa_fields")[0]
+    # sa_fields_data["Interval"] = interval
+    serializer = AioPGSASerializer(data=sa_fields_data)
+    serializer.is_valid(raise_exception=True)
+    await serializer.save()

@@ -1,9 +1,12 @@
 import abc
+import datetime
+import re
 import typing
 from functools import partial
 
 import marshmallow as ma
 import sqlalchemy as sa
+from psycopg2.extensions import PYINTERVAL
 from sqlalchemy.dialects.postgresql import ARRAY, JSON
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.sql.type_api import TypeEngine
@@ -44,6 +47,7 @@ class Enum(ma.fields.Field):
         return getattr(self.enum, value)
 
 
+# @todo: add field tests
 class UUID(ma.fields.UUID):
     def __init__(self, **kwargs):
         self.as_uuid = kwargs.pop("as_uuid", True)  # support sqlalchemy's postgres uuid `as_uuid`
@@ -57,6 +61,59 @@ class UUID(ma.fields.UUID):
         return str(uuid)
 
 
+# @todo: add field tests
+class Interval(ma.fields.TimeDelta):
+    def _deserialize(self, value, attr, data, **kwargs) -> datetime.timedelta:
+        try:
+            value = int(value)
+        except (TypeError, ValueError) as error:
+            # try to adapt postgres intervals (e.g. "3 month", "1 year -4 days") with psycopg2
+            try:
+                # psycopg adapter can not parse `hours`, `minutes`, and `seconds` keywords,
+                # we need to replace them to `3:22:1` form first
+                value = self._prepare_value_for_pg(value)
+                return PYINTERVAL(value, None)  # 2nd argument is unknown
+            except (TypeError, ValueError):
+                raise self.make_error("invalid") from error
+
+        try:
+            return datetime.timedelta(**{self.precision: value})
+        except OverflowError as error:
+            raise self.make_error("invalid") from error
+
+    def _prepare_value_for_pg(self, value: str):
+        """ Replace 1 hour 2 minutes 3 seconds to 1:2:3 form"""
+        hours_re = re.compile(r".*((\d+)\s*hour\w*\s*)")
+        minutes_re = re.compile(r".*((\d+)\s*minute\w*\s*)")
+        seconds_re = re.compile(r".*((\d+)\s*second\w*\s*)")
+        hours = False
+        minutes = False
+        try:
+            # @todo: use walrus here when pycodestyle will be updated to 2.6.0, now it breaks flake8
+            if hours_re.match(value):
+                match = hours_re.match(value)
+                # leave trailing colon if only hours will be presented in str
+                value = value.replace(match.group(1), f"{match.group(2)}:")
+                hours = True
+            if minutes_re.match(value):
+                match = minutes_re.match(value)
+                prefix = "" if hours else "0:"
+                value = value.replace(match.group(1), f"{prefix}{match.group(2)}")
+                minutes = True
+            if seconds_re.match(value):
+                match = seconds_re.match(value)
+                prefix = "0:0:"
+                if hours:
+                    if minutes:
+                        prefix = ":"
+                    else:
+                        prefix = ":0:"
+                value = value.replace(match.group(1), f"{prefix}{match.group(2)}")
+        except IndexError:
+            raise ValueError
+        return value.strip()
+
+
 SASerializerFieldMapping = typing.Dict[typing.Type[TypeEngine], typing.Type[ma.fields.Field]]
 
 sa_ma_field_mapping: SASerializerFieldMapping = {
@@ -67,7 +124,7 @@ sa_ma_field_mapping: SASerializerFieldMapping = {
     sa.Enum: Enum,
     sa.Float: ma.fields.Float,
     sa.Integer: ma.fields.Integer,
-    sa.Interval: ma.fields.TimeDelta,
+    sa.Interval: Interval,
     sa.Numeric: ma.fields.Decimal,
     sa.SmallInteger: ma.fields.Integer,
     sa.String: ma.fields.String,
@@ -152,7 +209,7 @@ class AioPGSAInferredFieldBuilder(InferredFieldBuilderABC):
                 raise ValueError(msg)
             enum_name = column.type.enums[0]
             enum = column.type.enum_class[enum_name]
-            kwargs["enum"] = enum
+            kwargs["enum"] = enum.__class__
 
         if field_cls is UUID:
             kwargs["as_uuid"] = column.type.as_uuid

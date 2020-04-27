@@ -1,0 +1,2 @@
+[run]
+source = aiohttp_rest_framework
