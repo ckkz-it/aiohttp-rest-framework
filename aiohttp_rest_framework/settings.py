@@ -22,6 +22,8 @@ db_orm_mappings = {
     }
 }
 
+DEFAULT_APP_CONN_PROP = "db"
+
 CONNECTION_PROP_RE = re.compile(r"^[^-\s]+$")
 
 
@@ -30,7 +32,7 @@ class Config:
             self,
             app: web.Application,
             *,
-            app_connection_property: str = "db",
+            app_connection_property: str = DEFAULT_APP_CONN_PROP,
             get_connection: typing.Callable = None,
             db_service: typing.Type[DatabaseServiceABC] = None,
             schema_type: str = AIOPG_SA,
