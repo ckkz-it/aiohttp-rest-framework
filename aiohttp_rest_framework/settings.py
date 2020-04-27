@@ -1,3 +1,4 @@
+import re
 import typing
 
 from aiohttp import web
@@ -21,6 +22,8 @@ db_orm_mappings = {
     }
 }
 
+CONNECTION_PROP_RE = re.compile(r"^[^-\s]+$")
+
 
 class Config:
     def __init__(
@@ -34,6 +37,9 @@ class Config:
     ):
         assert isinstance(app_connection_property, str), (
             "`app_connection_property` has to be a string"
+        )
+        assert CONNECTION_PROP_RE.match(app_connection_property), (
+            "`app_connection_property` must not have spaces and hyphens"
         )
         self.app_connection_property = app_connection_property
 

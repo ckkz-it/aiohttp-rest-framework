@@ -45,3 +45,10 @@ async def test_config_setup_with_async_get_connection():
     assert cfg.get_connection is get_conn, "wrong custom `get_connection` applied to settings"
     assert asyncio.iscoroutinefunction(cfg.get_connection), "`get_connection` is not async"
     assert await cfg.get_connection() == await get_conn()
+
+
+@pytest.mark.parametrize("conn_prop", [123, "with-hyphen", "with space"])
+def test_config_invalid_app_connection_property(conn_prop):
+    rest_config = {"app_connection_property": conn_prop}
+    with pytest.raises(AssertionError, match="app_connection_property"):
+        get_base_app(rest_config)
