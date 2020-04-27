@@ -12,3 +12,10 @@ class ValidationError(web.HTTPBadRequest):
         super().__init__(**kwargs)
         self._headers[hdrs.CONTENT_TYPE] = "application/json"
         self.text = json.dumps(detail)
+
+
+class ObjectNotFound(web.HTTPNotFound):
+    def __init__(self, detail: str = None, **kwargs):
+        super().__init__(**kwargs)
+        self._headers[hdrs.CONTENT_TYPE] = "application/json"
+        self.text = json.dumps({"error": detail or "Not found"})

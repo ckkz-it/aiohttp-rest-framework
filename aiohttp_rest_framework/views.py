@@ -75,9 +75,7 @@ class GenericAPIView(CorsViewMixin, web.View):
     async def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         where = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-        obj = await self.db_service.get(where)
-        if obj is None:
-            raise web.HTTPNotFound()
+        obj = await self.db_service.get(where)  # may raise `ObjectNotFound` exception
         return obj
 
     async def get_list(self):

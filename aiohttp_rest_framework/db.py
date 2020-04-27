@@ -6,6 +6,7 @@ from aiopg.sa.result import ResultProxy, RowProxy
 from sqlalchemy import Table, and_
 
 from aiohttp_rest_framework import types
+from aiohttp_rest_framework.exceptions import ObjectNotFound
 
 
 class DatabaseServiceABC(metaclass=abc.ABCMeta):
@@ -45,7 +46,13 @@ class AioPGSAService(DatabaseServiceABC):
             where = and_(self.model.columns[key] == value for key, value in where.items())
 
         query = self.model.select(where).limit(1)
-        return await self.execute(query, fetch="one")
+        try:
+            obj = await self.execute(query, fetch="one")
+        except Exception:
+            raise ObjectNotFound()
+        if obj is None:
+            raise ObjectNotFound()
+        return obj
 
     async def filter(self, where: typing.Mapping = None) -> typing.List[RowProxy]:
         if where:
