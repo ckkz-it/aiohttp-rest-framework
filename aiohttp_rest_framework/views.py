@@ -85,7 +85,7 @@ class GenericAPIView(CorsViewMixin, web.View):
 
 
 class CreateModelMixin:
-    async def create(self, *args, **kwargs):
+    async def create(self):
         data = await self.request.text()
         serializer = self.get_serializer(data=data, as_text=True)
         serializer.is_valid(raise_exception=True)
@@ -98,21 +98,21 @@ class CreateModelMixin:
 
 
 class ListModelMixin:
-    async def list(self, *args, **kwargs):
+    async def list(self):
         instances = await self.get_list()
         serializer = self.get_serializer(instances, many=True)
         return web.json_response(serializer.data)
 
 
 class RetrieveModelMixin:
-    async def retrieve(self, *args, **kwargs):
+    async def retrieve(self):
         instance = await self.get_object()
         serializer = self.get_serializer(instance)
         return web.json_response(serializer.data)
 
 
 class UpdateModelMixin:
-    async def update(self, *args, **kwargs):
+    async def update(self):
         instance = await self.get_object()  # may raise 404
 
         data = await self.request.text()
@@ -124,15 +124,15 @@ class UpdateModelMixin:
 
         return web.json_response(serializer.data)
 
-    def partial_update(self, *args, **kwargs):
-        return self.update(*args, **kwargs)
+    def partial_update(self):
+        return self.update()
 
     async def perform_update(self, serializer: Serializer):
         return await serializer.save()
 
 
 class DestroyModelMixin:
-    async def destroy(self, *args, **kwargs):
+    async def destroy(self):
         pass
 
     async def perform_destroy(self, instance):
@@ -141,82 +141,82 @@ class DestroyModelMixin:
 
 class CreateAPIView(CreateModelMixin,
                     GenericAPIView):
-    async def post(self, *args, **kwargs):
-        return await self.create(*args, **kwargs)
+    async def post(self):
+        return await self.create()
 
 
 class ListAPIView(ListModelMixin,
                   GenericAPIView):
-    async def get(self, *args, **kwargs):
-        return await self.list(*args, **kwargs)
+    async def get(self):
+        return await self.list()
 
 
 class RetrieveAPIView(RetrieveModelMixin,
                       GenericAPIView):
-    async def get(self, *args, **kwargs):
-        return await self.retrieve(*args, **kwargs)
+    async def get(self):
+        return await self.retrieve()
 
 
 class DestroyAPIView(DestroyModelMixin,
                      GenericAPIView):
-    async def delete(self, *args, **kwargs):
-        return await self.destroy(*args, **kwargs)
+    async def delete(self):
+        return await self.destroy()
 
 
 class UpdateAPIView(UpdateModelMixin,
                     GenericAPIView):
-    async def put(self, *args, **kwargs):
-        return await self.update(*args, **kwargs)
+    async def put(self):
+        return await self.update()
 
-    async def patch(self, *args, **kwargs):
-        return await self.partial_update(*args, **kwargs)
+    async def patch(self):
+        return await self.partial_update()
 
 
 class ListCreateAPIView(ListModelMixin,
                         CreateModelMixin,
                         GenericAPIView):
-    async def get(self, *args, **kwargs):
-        return await self.list(*args, **kwargs)
+    async def get(self):
+        return await self.list()
 
-    async def post(self, *args, **kwargs):
-        return await self.create(*args, **kwargs)
+    async def post(self):
+        return await self.create()
 
 
 class RetrieveUpdateAPIView(RetrieveModelMixin,
                             UpdateModelMixin,
                             GenericAPIView):
-    async def get(self, *args, **kwargs):
-        return await self.retrieve(*args, **kwargs)
+    async def get(self):
+        return await self.retrieve()
 
-    async def put(self, *args, **kwargs):
-        return await self.update(*args, **kwargs)
+    async def put(self):
+        return await self.update()
 
-    async def patch(self, *args, **kwargs):
-        return await self.partial_update(*args, **kwargs)
+    async def patch(self):
+        return await self.partial_update()
 
 
 class RetrieveDestroyAPIView(RetrieveModelMixin,
                              DestroyModelMixin,
                              GenericAPIView):
-    async def get(self, *args, **kwargs):
-        return await self.retrieve(*args, **kwargs)
+    async def get(self):
+        return await self.retrieve()
 
-    async def delete(self, *args, **kwargs):
-        return await self.destroy(*args, **kwargs)
+    async def delete(self):
+        return await self.destroy()
 
 
 class RetrieveUpdateDestroyAPIView(RetrieveModelMixin,
                                    UpdateModelMixin,
                                    DestroyModelMixin,
                                    GenericAPIView):
-    async def get(self, *args, **kwargs):
-        return await self.retrieve(*args, **kwargs)
+    async def get(self):
+        return await self.retrieve()
 
-    async def put(self, *args, **kwargs):
-        return await self.update(*args, **kwargs)
+    async def put(self):
+        return await self.update()
 
-    async def patch(self, *args, **kwargs):
-        return await self.partial_update(*args, **kwargs)
+    async def patch(self):
+        return await self.partial_update()
 
-    async def delete(self, *args, **kwargs):
-        return await self.destroy(*args, **kwargs)
+    async def delete(self):
+        return await self.destroy()
