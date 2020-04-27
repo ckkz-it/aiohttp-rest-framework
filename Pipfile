@@ -9,6 +9,7 @@ flake8-quotes = "*"
 isort = {extras = ["pipfile"],version = "*"}
 pytest-aiohttp = "*"
 python-dotenv = "*"
+pytest-cov = "*"
 
 [packages]
 marshmallow = "*"
