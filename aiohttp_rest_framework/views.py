@@ -26,10 +26,6 @@ class GenericAPIView(CorsViewMixin, web.View):
         }
         self.detail = lookup_field_value is not None
 
-        method = self.request.method.lower()
-        if method in ["put", "patch"]:
-            self.kwargs["partial"] = method == "patch"
-
     @property
     def db_service(self):
         if not self._db_service:
@@ -40,7 +36,7 @@ class GenericAPIView(CorsViewMixin, web.View):
     @property
     def model(self):
         serializer_class = self.get_serializer_class()
-        return serializer_class.opts.model
+        return serializer_class.opts.model  # noqa
 
     def get_serializer_class(self):
         assert self.serializer_class is not None, (
@@ -111,11 +107,12 @@ class RetrieveModelMixin:
 
 class UpdateModelMixin:
     async def update(self):
-        instance = await self.get_object()  # may raise 404
+        instance = await self.get_object()
 
         data = await self.request.text()
+        partial = self.kwargs.pop("partial", False)
         serializer = self.get_serializer(instance, data=data, as_text=True,
-                                         partial=self.kwargs["partial"])
+                                         partial=partial)
         serializer.is_valid(raise_exception=True)
 
         await self.perform_update(serializer)
@@ -123,6 +120,7 @@ class UpdateModelMixin:
         return web.json_response(serializer.data)
 
     def partial_update(self):
+        self.kwargs["partial"] = True
         return self.update()
 
     async def perform_update(self, serializer: Serializer):

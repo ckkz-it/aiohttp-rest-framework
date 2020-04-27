@@ -197,17 +197,15 @@ class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
     opts: ModelSerializerOpts = None
 
     def _init_fields(self) -> None:
-        if self._is_fields_all:
+        if self._is_fields_all:  # is set in meta class
             # replace `fields = "__all__"` with actual model fields
-            self.opts.fields = self._get_all_model_fields(self.opts.model)
+            self.opts.fields = self._get_all_model_fields()
         super()._init_fields()
         # replace marshmallow inferred fields with database/schema specific fields
         inferred_field_builder = self.config.inferred_field_builder
         for field_name, field_obj in self.fields.items():
             if isinstance(field_obj, ma.fields.Inferred):
-                inferred_field = inferred_field_builder(
-                    name=field_name, serializer=self, model=self.opts.model
-                ).build()
+                inferred_field = inferred_field_builder(name=field_name, serializer=self).build()
                 self._bind_field(field_name, inferred_field)
                 self.fields[field_name] = inferred_field
                 if field_name in self.dump_fields:
@@ -215,9 +213,12 @@ class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
                 if field_name in self.load_fields:
                     self.load_fields[field_name] = inferred_field
 
-    def _get_all_model_fields(self, model) -> typing.Union[typing.List[str], typing.Tuple[str]]:
-        """ Override this method for custom logic getting model fields when __all__ specified """
-        return self.config.get_all_model_fields(model)
+    def _get_all_model_fields(self) -> typing.Sequence[str]:
+        """
+        Override this method for custom logic getting model fields when __all__ specified
+        By default it's specified in config for concrete db/orm mapping
+        """
+        return self.config.get_all_model_fields(self.opts.model)
 
     async def update(self, instance: typing.Any, validated_data: typing.OrderedDict):
         db_service = await self.get_db_service()

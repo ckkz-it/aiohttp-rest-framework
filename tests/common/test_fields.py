@@ -30,14 +30,11 @@ def test_enum_field_by_name():
     assert deserialized == my_enum_one, "invalid deserialization by name"
 
 
-def test_enum_field_invalid_name_value():
+@pytest.mark.parametrize("non_string_value", [123, True, {}, []])
+def test_enum_field_invalid_name_value(non_string_value):
     field = Enum(MyEnum, by_value=False)
-    not_string_value1 = 123
-    not_string_value2 = True
     with pytest.raises(ma.exceptions.ValidationError, match="Not a valid string"):
-        field._deserialize(not_string_value1)
-    with pytest.raises(ma.exceptions.ValidationError, match="Not a valid string"):
-        field._deserialize(not_string_value2)
+        field._deserialize(non_string_value)
 
 
 def test_enum_field_invalid_value():
