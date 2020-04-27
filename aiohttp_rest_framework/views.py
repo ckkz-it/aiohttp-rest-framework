@@ -129,10 +129,12 @@ class UpdateModelMixin:
 
 class DestroyModelMixin:
     async def destroy(self):
-        pass
+        instance = await self.get_object()
+        await self.perform_destroy(instance)
+        return web.HTTPNoContent()
 
     async def perform_destroy(self, instance):
-        pass
+        await self.db_service.delete(instance)
 
 
 class CreateAPIView(CreateModelMixin,

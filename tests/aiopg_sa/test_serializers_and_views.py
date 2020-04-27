@@ -100,14 +100,31 @@ async def test_partial_update_view(client: TestClient, user: RowProxy, get_user_
     assert response_data["name"] == user.name, "wrong field updated"
 
 
-class UserWithFieldsALLSerializer(ModelSerializer):
-    class Meta:
-        model = models.users
-        fields = "__all__"
+async def test_update_non_existent_user(client: TestClient):
+    response = await client.put("/users/123", json={})
+    assert response.status == 404, "invalid response"
+
+
+async def test_destroy_view(client: TestClient, user: RowProxy, get_user_by_id):
+    response = await client.delete(f"/users/{user.id}")
+    assert response.status == 204, "invalid response"
+
+    user = await get_user_by_id(user.id)
+    assert user is None, "user wasn't deleted"
+
+
+async def test_destroy_non_existend_user(client: TestClient):
+    response = await client.delete("/users/123")
+    assert response.status == 404, "invalid response"
 
 
 # use `client` here to initialize app's db connection property
 async def test_fields_all_for_serializer(user: RowProxy, users_fixtures, client):
+    class UserWithFieldsALLSerializer(ModelSerializer):
+        class Meta:
+            model = models.users
+            fields = "__all__"
+
     serializer = UserWithFieldsALLSerializer(user)
     for field_name in serializer.data:
         assert field_name in models.users.columns, (
