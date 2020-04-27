@@ -110,7 +110,7 @@ class AioPGSAInferredFieldBuilder(InferredFieldBuilderABC):
         column = model.columns.get(self.name)
         assert column is not None, (
             f"{self.name} was not found for {self.serializer.__class__.__name__} serializer "
-            f"in {model.__name__} model"
+            f"in {model.name} model"
         )
 
         mapping = ClassLookupDict(sa_ma_pg_field_mapping)
@@ -118,6 +118,7 @@ class AioPGSAInferredFieldBuilder(InferredFieldBuilderABC):
 
         self._set_db_specific_kwargs(kwargs, column)
         self._set_field_specific_kwargs(kwargs, field_cls, column)
+        kwargs.setdefault("required", True)  # by default all fields are required
         field = field_cls(**kwargs)
         return field
 
@@ -125,7 +126,7 @@ class AioPGSAInferredFieldBuilder(InferredFieldBuilderABC):
         if column.nullable:
             kwargs.setdefault("allow_none", True)
         if column.primary_key:
-            kwargs.setdefault("dump_only", True)
+            kwargs.setdefault("dump_only", True)  # pk is read only
             kwargs.setdefault("required", False)
         if column.default and not column.primary_key:
             kwargs.setdefault("required", False)
@@ -134,7 +135,7 @@ class AioPGSAInferredFieldBuilder(InferredFieldBuilderABC):
                 # sqlalchemy wraps callable into lambdas which accepts context
                 # strip this context argument
                 default = partial(default, {})
-            kwargs.setdefault("missing", default)
+            kwargs.setdefault("missing", default)  # ma's `missing` is like drf's `default`
         if column.server_default:
             kwargs.setdefault("required", False)
 
