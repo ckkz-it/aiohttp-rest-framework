@@ -11,7 +11,6 @@ __all__ = ["AIOPG_SA", "SCHEMA_TYPES", "Config", "APP_CONFIG_KEY", "setup_rest_f
            "get_global_config"]
 
 AIOPG_SA = "aiopg_sa"
-
 SCHEMA_TYPES = (AIOPG_SA,)
 
 db_orm_mappings = {
@@ -23,7 +22,6 @@ db_orm_mappings = {
 }
 
 DEFAULT_APP_CONN_PROP = "db"
-
 CONNECTION_PROP_RE = re.compile(r"^[^-\s]+$")
 
 

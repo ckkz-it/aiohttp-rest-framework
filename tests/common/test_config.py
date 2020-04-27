@@ -59,3 +59,9 @@ def test_config_invalid_app_connection_property(conn_prop):
     rest_config = {"app_connection_property": conn_prop}
     with pytest.raises(AssertionError, match="app_connection_property"):
         get_base_app(rest_config)
+
+
+def test_invalid_schema_type():
+    rest_config = {"schema_type": "invalid"}
+    with pytest.raises(AssertionError, match="`schema_type` has to be one of"):
+        get_base_app(rest_config)
