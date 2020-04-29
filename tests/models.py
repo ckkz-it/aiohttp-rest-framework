@@ -38,7 +38,7 @@ aiopg_sa_fields = sa.Table(
 
     sa.Column("StringifiedUUID", UUID, default=stringified_uuid),
     sa.Column("BigInteger", sa.BigInteger, nullable=True),
-    sa.Column("Boolean", sa.Boolean, nullable=True),
+    sa.Column("Boolean", sa.Boolean, server_default=sa.text("FALSE")),
     sa.Column("Date", sa.Date, nullable=True),
     sa.Column("DateTime", sa.DateTime, nullable=True),
     sa.Column("Enum", sa.Enum(AioPGSAEnum), nullable=True),
