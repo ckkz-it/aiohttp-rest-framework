@@ -19,7 +19,6 @@ pip install aiohttp-rest-framework
 Consider we have the following sqlalchemy tables (models):
 
 ```python
-import datetime
 from uuid import uuid4
 
 import sqlalchemy as sa
@@ -30,11 +29,9 @@ meta = sa.MetaData()
 users = sa.Table(
     "users", meta,
     sa.Column("id", UUID(as_uuid=True), primary_key=True, default=uuid4),
-    sa.Column("name", sa.Text, default=""),
+    sa.Column("name", sa.Text),
     sa.Column("email", sa.Text, unique=True),
-    sa.Column("phone", sa.Text, default=""),
-    sa.Column("password", sa.Text),
-    sa.Column("created_at", sa.DateTime, default=datetime.datetime.utcnow),
+    sa.Column("phone", sa.Text),
     sa.Column("company_id", sa.ForeignKey("companies.id"), nullable=True),
 )
 
@@ -45,22 +42,18 @@ companies = sa.Table(
 )
 ```
 
-Now we can use very familiar to us from DRF serializer, with taken  best of marshmalow's `Schema` syntax:
+Now we can use very familiar to us from DRF serializer, built on top of marshmalow's `Schema`:
 
 ```python
-from aiohttp_rest_framework import fields
 from aiohttp_rest_framework import serializers
 
 from app.models import users
 
 
 class UserSerializer(serializers.ModelSerializer):
-    password = fields.Str(load_only=True, required=False)
-
     class Meta:
         model = users
         fields = "__all__"
-        dump_only = ("created_at",)
 ```
 
 And, finally, now we can use our serializer in class based views:
@@ -119,7 +112,6 @@ And get the following `HTTP 201 Response`:
   "name": "John Doe",
   "email": "john@mail.com",
   "phone": "+123456789",
-  "created_at": "2020-04-29T15:30:39.835568",
   "company_id": null
 }
 ```
@@ -140,7 +132,6 @@ curl -H "Content-Type: application/json"
   "name": "John Doe",
   "email": "john@mail.com",
   "phone": "+123456789",
-  "created_at": "2020-04-29T15:30:39.835568",
   "company_id": "0413de74-d9fb-494b-ba56-b56599261fb0"
 }
 ```
