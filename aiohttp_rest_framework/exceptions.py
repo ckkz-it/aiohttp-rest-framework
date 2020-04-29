@@ -2,6 +2,8 @@ import json
 
 from aiohttp import hdrs, web
 
+__all__ = ["AioRestException", "ValidationError", "ObjectNotFound"]
+
 
 class AioRestException(Exception):
     """ Base class for aiohttp-rest-framework errors """

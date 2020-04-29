@@ -2,7 +2,7 @@ from aiohttp_rest_framework import views
 from tests.serializers import UserSerializer
 
 
-class UsersListView(views.ListCreateAPIView):
+class UsersListCreateView(views.ListCreateAPIView):
     serializer_class = UserSerializer
 
 

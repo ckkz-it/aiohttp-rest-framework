@@ -8,6 +8,8 @@ from sqlalchemy import Table, and_
 from aiohttp_rest_framework import types
 from aiohttp_rest_framework.exceptions import ObjectNotFound
 
+__all__ = ["DatabaseServiceABC", "AioPGSAService"]
+
 
 class DatabaseServiceABC(metaclass=abc.ABCMeta):
     @abc.abstractmethod
