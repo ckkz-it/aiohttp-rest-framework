@@ -47,7 +47,7 @@ class GenericAPIView(CorsViewMixin, web.View):
 
     def get_serializer(self, *args, **kwargs) -> Serializer:
         serializer_class = self.get_serializer_class()
-        kwargs["serializer_context"] = self.get_serializer_context()
+        kwargs.setdefault("serializer_context", self.get_serializer_context())
         return serializer_class(*args, **kwargs)
 
     def get_serializer_context(self):
