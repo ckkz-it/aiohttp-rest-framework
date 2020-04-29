@@ -1,5 +1,9 @@
 # aiohttp-rest-framework
 
+[![codecov](https://codecov.io/gh/ckkz-it/aiohttp-rest-framework/branch/master/graph/badge.svg)](https://codecov.io/gh/ckkz-it/aiohttp-rest-framework)
+
+---
+
 Fully asynchronous rest framework for aiohttp web server, inspired by [Django Rest Framework](https://www.django-rest-framework.org) (DRF), powered by [marshmallow](https://github.com/marshmallow-code/marshmallow) and [SQLAlchemy](https://www.sqlalchemy.org).
 
 Currently supports only combination of postgres (thanks to [aiopg](https://github.com/aio-libs/aiopg)) and sqlalchemy.
