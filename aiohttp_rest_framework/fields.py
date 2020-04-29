@@ -62,9 +62,20 @@ class UUID(ma.fields.UUID):
 
 
 class Interval(ma.fields.TimeDelta):
+    default_error_messages = {
+        "invalid": "Not a valid period of time.",
+        "format": "{input!r} cannot be formatted as a timedelta.",
+        "zero": "Zero interval is not allowed",
+    }
+
+    INTERVAL_RE = re.compile(r".*\d+\s*\w+.*")  # digit + letter(s)
     HOURS_RE = re.compile(r".*(?P<full_match>(?P<amount>\d+)\s*hours?\s*)")
     MINUTES_RE = re.compile(r".*(?P<full_match>(?P<amount>\d+)\s*minutes?\s*)")
     SECONDS_RE = re.compile(r".*(?P<full_match>(?P<amount>\d+)\s*seconds?\s*)")
+
+    def __init__(self, *args, **kwargs):
+        self.allow_zero = kwargs.pop("allow_zero", False)
+        super().__init__(*args, **kwargs)
 
     def _deserialize(self, value, attr, data, **kwargs) -> datetime.timedelta:
         try:
@@ -72,15 +83,20 @@ class Interval(ma.fields.TimeDelta):
         except (TypeError, ValueError):
             # try to adapt postgres intervals (e.g. "3 month", "1 year -4 days") with psycopg2
             try:
+                if not self.INTERVAL_RE.match(value):
+                    raise ValueError
                 # psycopg adapter can not parse `hours`, `minutes`, and `seconds` keywords,
-                # we need to replace them to `3:22:1` form first
+                # we need to replace them to `3:22:1` format first
                 value = self._prepare_value_for_pg(value)
                 return PYINTERVAL(value, None)  # 2nd argument is unknown
             except (TypeError, ValueError, IndexError) as error:
                 raise self.make_error("invalid") from error
 
         try:
-            return datetime.timedelta(**{self.precision: value})
+            interval: datetime.timedelta = datetime.timedelta(**{self.precision: value})
+            if interval.total_seconds() == 0 and not self.allow_zero:
+                raise self.make_error("zero")
+            return interval
         except OverflowError as error:
             raise self.make_error("invalid") from error
 

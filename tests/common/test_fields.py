@@ -75,3 +75,18 @@ async def test_interval_overflow_error():
     with pytest.raises(ValidationError):
         max_seconds = (datetime.timedelta.max.days + 1) * 24 * 60 * 60
         Interval().deserialize(max_seconds)
+
+
+def test_interval_invalid_range_err():
+    with pytest.raises(ValidationError):
+        Interval().deserialize("invalid range")
+
+
+def test_interval_zero_range_not_allowed():
+    with pytest.raises(ValidationError):
+        Interval(allow_zero=False).deserialize(0)
+
+
+def test_interval_zero_range_allowed():
+    interval: datetime.timedelta = Interval(allow_zero=True).deserialize(0)
+    assert interval.total_seconds() == 0
