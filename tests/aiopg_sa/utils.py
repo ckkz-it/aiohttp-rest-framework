@@ -4,6 +4,7 @@ import aiopg.sa
 import psycopg2
 import sqlalchemy as sa
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+from sqlalchemy import select
 
 from tests import models
 from tests.config import db, postgres_url, postgres_url_template
@@ -48,9 +49,13 @@ def sync_engine_connection() -> sa.engine.Engine:
         engine.dispose()
 
 
+async def get_async_engine() -> aiopg.sa.Engine:
+    return await aiopg.sa.create_engine(postgres_url)
+
+
 @asynccontextmanager
 async def async_engine_connection():
-    engine: aiopg.sa.Engine = await aiopg.sa.create_engine(postgres_url)
+    engine = await get_async_engine()
     async with engine.acquire() as conn:
         yield conn
 
@@ -72,3 +77,7 @@ async def create_data_fixtures():
         for table_name, table_data in data.items():
             table: sa.Table = getattr(models, table_name)
             await conn.execute(table.insert().values(table_data))
+
+        company_query = select([models.companies.c.id]).limit(1)
+        company = await (await conn.execute(company_query)).fetchone()
+        await conn.execute(models.users.update().values({"company_id": company.id}))

@@ -13,6 +13,14 @@
       "password": "very_pwfl"
     }
   ],
+  "companies": [
+    {
+      "name": "Google"
+    },
+    {
+      "name": "Facebook"
+    }
+  ],
   "aiopg_sa_fields": [
     {
       "BigInteger": 100,

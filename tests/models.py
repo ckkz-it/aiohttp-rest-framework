@@ -20,11 +20,13 @@ users = sa.Table(
     sa.Column("phone", sa.Text, nullable=False, default=""),
     sa.Column("password", sa.Text, nullable=False),
     sa.Column("created_at", sa.DateTime, nullable=False, default=datetime.datetime.utcnow),
+    sa.Column("company_id", sa.ForeignKey("companies.id"), nullable=True),
 )
 
 companies = sa.Table(
     "companies", meta,
     sa.Column("id", UUID(as_uuid=True), primary_key=True, default=uuid4),
+    sa.Column("name", sa.Text),
 )
 
 
