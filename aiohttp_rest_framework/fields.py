@@ -61,6 +61,7 @@ class UUID(ma.fields.UUID):
         return str(uuid)
 
 
+# @todo: add support for weeks
 class Interval(ma.fields.TimeDelta):
     default_error_messages = {
         "invalid": "Not a valid period of time.",
@@ -196,6 +197,7 @@ class AioPGSAInferredFieldBuilder(InferredFieldBuilderABC):
     def _set_db_specific_kwargs(self, kwargs: dict, column: sa.Column):
         if column.nullable:
             kwargs.setdefault("allow_none", True)
+            kwargs.setdefault("required", False)
         if column.primary_key:
             kwargs.setdefault("dump_only", True)  # pk is read only
             kwargs.setdefault("required", False)
