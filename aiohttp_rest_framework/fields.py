@@ -63,6 +63,10 @@ class UUID(ma.fields.UUID):
 
 # @todo: add field tests
 class Interval(ma.fields.TimeDelta):
+    HOURS_RE = re.compile(r".*(?P<full_match>(?P<amount>\d+)\s*hours?\s*)")
+    MINUTES_RE = re.compile(r".*(?P<full_match>(?P<amount>\d+)\s*minutes?\s*)")
+    SECONDS_RE = re.compile(r".*(?P<full_match>(?P<amount>\d+)\s*seconds?\s*)")
+
     def _deserialize(self, value, attr, data, **kwargs) -> datetime.timedelta:
         try:
             value = int(value)
@@ -73,8 +77,8 @@ class Interval(ma.fields.TimeDelta):
                 # we need to replace them to `3:22:1` form first
                 value = self._prepare_value_for_pg(value)
                 return PYINTERVAL(value, None)  # 2nd argument is unknown
-            except (TypeError, ValueError):
-                raise self.make_error("invalid") from error
+            except (TypeError, ValueError, IndexError) as err:
+                raise self.make_error("invalid") from err
 
         try:
             return datetime.timedelta(**{self.precision: value})
@@ -83,34 +87,28 @@ class Interval(ma.fields.TimeDelta):
 
     def _prepare_value_for_pg(self, value: str):
         """ Replace 1 hour 2 minutes 3 seconds to 1:2:3 form"""
-        hours_re = re.compile(r".*((\d+)\s*hour\w*\s*)")
-        minutes_re = re.compile(r".*((\d+)\s*minute\w*\s*)")
-        seconds_re = re.compile(r".*((\d+)\s*second\w*\s*)")
         hours = False
         minutes = False
-        try:
-            # @todo: use walrus here when pycodestyle will be updated to 2.6.0, now it breaks flake8
-            if hours_re.match(value):
-                match = hours_re.match(value)
-                # leave trailing colon if only hours will be presented in str
-                value = value.replace(match.group(1), f"{match.group(2)}:")
-                hours = True
-            if minutes_re.match(value):
-                match = minutes_re.match(value)
-                prefix = "" if hours else "0:"
-                value = value.replace(match.group(1), f"{prefix}{match.group(2)}")
-                minutes = True
-            if seconds_re.match(value):
-                match = seconds_re.match(value)
-                prefix = "0:0:"
-                if hours:
-                    if minutes:
-                        prefix = ":"
-                    else:
-                        prefix = ":0:"
-                value = value.replace(match.group(1), f"{prefix}{match.group(2)}")
-        except IndexError:
-            raise ValueError
+        # @todo: use walrus here when pycodestyle will be updated to 2.6.0, now it breaks flake8
+        if self.HOURS_RE.match(value):
+            match = self.HOURS_RE.match(value)
+            # leave trailing colon if only hours will be presented in str
+            value = value.replace(match.group("full_match"), f"{match.group('amount')}:")
+            hours = True
+        if self.MINUTES_RE.match(value):
+            match = self.MINUTES_RE.match(value)
+            prefix = "" if hours else "0:"
+            value = value.replace(match.group("full_match"), f"{prefix}{match.group('amount')}")
+            minutes = True
+        if self.SECONDS_RE.match(value):
+            match = self.SECONDS_RE.match(value)
+            prefix = "0:0:"
+            if hours:
+                if minutes:
+                    prefix = ":"
+                else:
+                    prefix = "0:"
+            value = value.replace(match.group("full_match"), f"{prefix}{match.group('amount')}")
         return value.strip()
 
 
