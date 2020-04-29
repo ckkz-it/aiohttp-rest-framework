@@ -1,14 +1,9 @@
-from aiohttp import hdrs
-
 from aiohttp_rest_framework import views
-from tests.serializers import UserCreateSerializer, UserSerializer
+from tests.serializers import UserSerializer
 
 
 class UsersListView(views.ListCreateAPIView):
-    def get_serializer_class(self):
-        if self.request.method == hdrs.METH_GET:
-            return UserSerializer
-        return UserCreateSerializer
+    serializer_class = UserSerializer
 
 
 class UsersRetrieveUpdateDestroyView(views.RetrieveUpdateDestroyAPIView):

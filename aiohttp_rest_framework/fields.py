@@ -6,14 +6,19 @@ from functools import partial
 
 import marshmallow as ma
 import sqlalchemy as sa
+from marshmallow.fields import *  # noqa
+from marshmallow.fields import __all__ as ma_fields_all  # noqa
 from psycopg2.extensions import PYINTERVAL
 from sqlalchemy.dialects.postgresql import ARRAY, JSON
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
-from sqlalchemy.sql.type_api import TypeEngine
 
+from aiohttp_rest_framework.types import SASerializerFieldMapping
 from aiohttp_rest_framework.utils import ClassLookupDict
 
+__all__ = ["Enum", "UUID", "Interval"] + ma_fields_all
 
+
+# @todo: add support for multiple enums
 class Enum(ma.fields.Field):
     default_error_messages = {
         "invalid_string": "Not a valid string.",
@@ -50,7 +55,7 @@ class Enum(ma.fields.Field):
 # @todo: add field tests
 class UUID(ma.fields.UUID):
     def __init__(self, **kwargs):
-        self.as_uuid = kwargs.pop("as_uuid", True)  # support sqlalchemy's postgres uuid `as_uuid`
+        self.as_uuid = kwargs.pop("as_uuid", False)  # support sqlalchemy's postgres uuid `as_uuid`
         super().__init__(**kwargs)
 
     def _deserialize(self, value, attr, data, **kwargs):
@@ -128,8 +133,6 @@ class Interval(ma.fields.TimeDelta):
             value = value.replace(match.group("full_match"), f"{prefix}{match.group('amount')}")
         return value.strip()
 
-
-SASerializerFieldMapping = typing.Dict[typing.Type[TypeEngine], typing.Type[ma.fields.Field]]
 
 sa_ma_field_mapping: SASerializerFieldMapping = {
     sa.BigInteger: ma.fields.Integer,

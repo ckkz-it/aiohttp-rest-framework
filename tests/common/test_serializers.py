@@ -1,6 +1,6 @@
 import pytest
-from marshmallow import fields
 
+from aiohttp_rest_framework import fields
 from aiohttp_rest_framework.serializers import ModelSerializer, Serializer
 from tests import models
 from tests.base_app import get_base_app

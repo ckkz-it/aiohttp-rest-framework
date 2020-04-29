@@ -3,7 +3,6 @@ import enum
 
 import marshmallow as ma
 import pytest
-from marshmallow import ValidationError
 
 from aiohttp_rest_framework.fields import Enum, Interval
 
@@ -40,20 +39,20 @@ def test_enum_serialize_null_value():
 @pytest.mark.parametrize("non_string_value", [123, True, {}, []])
 def test_enum_field_invalid_name_value(non_string_value):
     field = Enum(MyEnum, by_value=False)
-    with pytest.raises(ma.exceptions.ValidationError, match="Not a valid string"):
+    with pytest.raises(ma.ValidationError, match="Not a valid string"):
         field._deserialize(non_string_value)
 
 
 def test_enum_field_invalid_value():
     field = Enum(MyEnum)
     invalid_value = "not_from_enum"
-    with pytest.raises(ma.exceptions.ValidationError, match="Not a valid value") as err:
+    with pytest.raises(ma.ValidationError, match="Not a valid value") as err:
         field._deserialize(invalid_value)
     for enm in MyEnum:
         assert err.match(enm.value), f"{enm.value} is not listed in valid enum values"
 
     field = Enum(MyEnum, by_value=False)
-    with pytest.raises(ma.exceptions.ValidationError, match=r"Not a valid value") as err:
+    with pytest.raises(ma.ValidationError, match=r"Not a valid value") as err:
         field._deserialize(invalid_value)
     for enm in MyEnum:
         assert err.match(enm.name), f"{enm.name} is not listed in valid enum names"
@@ -72,18 +71,18 @@ async def test_interval_field_deserialization(interval, expected_timedelta):
 
 
 async def test_interval_overflow_error():
-    with pytest.raises(ValidationError):
+    with pytest.raises(ma.ValidationError):
         max_seconds = (datetime.timedelta.max.days + 1) * 24 * 60 * 60
         Interval().deserialize(max_seconds)
 
 
 def test_interval_invalid_range_err():
-    with pytest.raises(ValidationError):
+    with pytest.raises(ma.ValidationError):
         Interval().deserialize("invalid range")
 
 
 def test_interval_zero_range_not_allowed():
-    with pytest.raises(ValidationError):
+    with pytest.raises(ma.ValidationError):
         Interval(allow_zero=False).deserialize(0)
 
 
