@@ -70,15 +70,15 @@ class Interval(ma.fields.TimeDelta):
     def _deserialize(self, value, attr, data, **kwargs) -> datetime.timedelta:
         try:
             value = int(value)
-        except (TypeError, ValueError) as error:
+        except (TypeError, ValueError):
             # try to adapt postgres intervals (e.g. "3 month", "1 year -4 days") with psycopg2
             try:
                 # psycopg adapter can not parse `hours`, `minutes`, and `seconds` keywords,
                 # we need to replace them to `3:22:1` form first
                 value = self._prepare_value_for_pg(value)
                 return PYINTERVAL(value, None)  # 2nd argument is unknown
-            except (TypeError, ValueError, IndexError) as err:
-                raise self.make_error("invalid") from err
+            except (TypeError, ValueError, IndexError) as error:
+                raise self.make_error("invalid") from error
 
         try:
             return datetime.timedelta(**{self.precision: value})

@@ -5,7 +5,7 @@ import pytest
 from aiopg.sa.result import RowProxy
 from marshmallow import ValidationError
 
-from aiohttp_rest_framework.fields import sa_ma_pg_field_mapping, Interval
+from aiohttp_rest_framework.fields import Interval, sa_ma_pg_field_mapping
 from aiohttp_rest_framework.serializers import ModelSerializer
 from aiohttp_rest_framework.utils import ClassLookupDict
 from tests import models
@@ -60,7 +60,7 @@ async def test_aiopg_sa_inferred_field_deserialization(get_fixtures_by_name, cli
     await serializer.save()
 
 
-@pytest.mark.parametrize("interval,expected_timedelta", [
+@pytest.mark.parametrize("interval, expected_timedelta", [
     ("3 hours 2 minutes 3 seconds", datetime.timedelta(hours=3, minutes=2, seconds=3)),
     ("3 hours 3 seconds", datetime.timedelta(hours=3, seconds=3)),
     (86400, datetime.timedelta(seconds=86400)),
