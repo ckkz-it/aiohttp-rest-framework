@@ -93,6 +93,7 @@ class Interval(ma.fields.TimeDelta):
         if self.HOURS_RE.match(value):
             match = self.HOURS_RE.match(value)
             # leave trailing colon if only hours will be presented in str
+            # `5:` is considered as 5 hours 0 minutes
             value = value.replace(match.group("full_match"), f"{match.group('amount')}:")
             hours = True
         if self.MINUTES_RE.match(value):
