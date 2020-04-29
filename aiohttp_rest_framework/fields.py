@@ -61,7 +61,6 @@ class UUID(ma.fields.UUID):
         return str(uuid)
 
 
-# @todo: add field tests
 class Interval(ma.fields.TimeDelta):
     HOURS_RE = re.compile(r".*(?P<full_match>(?P<amount>\d+)\s*hours?\s*)")
     MINUTES_RE = re.compile(r".*(?P<full_match>(?P<amount>\d+)\s*minutes?\s*)")
