@@ -21,6 +21,10 @@ class DatabaseServiceABC(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    async def all(self, *args, **kwargs):
+        pass
+
+    @abc.abstractmethod
     async def filter(self, *args, **kwargs):
         pass
 
@@ -53,6 +57,10 @@ class AioPGSAService(DatabaseServiceABC):
         if obj is None:
             raise ObjectNotFound()
         return obj
+
+    async def all(self) -> typing.List[RowProxy]:
+        query = self.model.select()
+        return await self.execute(query, fetch="all")
 
     async def filter(self, where: typing.Mapping = None, **kwargs) -> typing.List[RowProxy]:
         where = self._construct_whereclause(where, kwargs)

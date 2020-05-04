@@ -75,7 +75,7 @@ class GenericAPIView(CorsViewMixin, web.View):
         return obj
 
     async def get_list(self):
-        return await self.db_service.filter()
+        return await self.db_service.all()
 
 
 class CreateModelMixin:
