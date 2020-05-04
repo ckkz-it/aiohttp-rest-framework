@@ -1,5 +1,6 @@
 import asyncio
 
+import pytest
 from aiohttp.test_utils import TestClient
 from aiopg.sa.result import RowProxy
 
@@ -113,13 +114,13 @@ async def test_destroy_view(client: TestClient, user: RowProxy, get_user_by_id):
     assert user is None, "user wasn't deleted"
 
 
-async def test_destroy_non_existend_user(client: TestClient):
+async def test_destroy_non_existent_user(client: TestClient):
     response = await client.delete("/users/123")
     assert response.status == 404, "invalid response"
 
 
-# use `client` here to initialize app's db connection property
-async def test_fields_all_for_serializer(user: RowProxy, users_fixtures, client):
+@pytest.mark.with_client
+async def test_fields_all_for_serializer(user: RowProxy, users_fixtures):
     class UserWithFieldsALLSerializer(ModelSerializer):
         class Meta:
             model = models.users

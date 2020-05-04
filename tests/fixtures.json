@@ -11,6 +11,12 @@
       "email": "mark@mail.com",
       "phone": "+987654321",
       "password": "very_pwfl"
+    },
+    {
+      "name": "Oliver Twist",
+      "email": "o.twist@mail.com",
+      "phone": "+987654321",
+      "password": "very_pwfl"
     }
   ],
   "companies": [

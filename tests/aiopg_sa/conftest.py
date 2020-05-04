@@ -49,3 +49,9 @@ async def aiopg_sa_instance(loop):
         query = models.aiopg_sa_fields.select().limit(1)
         result: ResultProxy = await conn.execute(query)
         return await result.fetchone()
+
+
+def pytest_runtest_setup(item):
+    if "with_client" in item.keywords and "client" not in item.fixturenames:
+        # inject client
+        item.fixturenames.append("client")

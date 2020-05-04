@@ -24,7 +24,6 @@ class Enum(ma.fields.Field):
         "invalid_string": "Not a valid string.",
         "invalid_enum": "Not a valid value, has to be one of ({values}).",
     }
-    by_value: bool = True
 
     def __init__(self, enum, by_value=True, **kwargs):
         self.enum = enum
@@ -110,7 +109,6 @@ class Interval(ma.fields.TimeDelta):
         """ Replace 1 hour 2 minutes 3 seconds to 1:2:3 form"""
         hours = False
         minutes = False
-        # @todo: use walrus here when pycodestyle will be updated to 2.6.0, now it breaks flake8
         if self.HOURS_RE.match(value):
             match = self.HOURS_RE.match(value)
             # leave trailing colon if only hours will be presented in str
