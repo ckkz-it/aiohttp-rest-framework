@@ -74,7 +74,7 @@ class GenericAPIView(CorsViewMixin, web.View):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         where = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
         try:
-            obj = await self.db_service.get(where)
+            obj = await self.db_service.get(**where)
         except ObjectNotFound:
             raise HTTPNotFound()
         return obj

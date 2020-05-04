@@ -47,8 +47,8 @@ class AioPGSAService(DatabaseServiceABC):
         self.connection = connection
         self.model = model
 
-    async def get(self, where: typing.Mapping = None, **kwargs) -> typing.Optional[RowProxy]:
-        where = self._construct_whereclause(where, kwargs)
+    async def get(self, **where) -> typing.Optional[RowProxy]:
+        where = self._construct_whereclause(where)
         query = self.model.select(where)
         try:
             objs = await self.execute(query, fetch="all")
@@ -64,45 +64,24 @@ class AioPGSAService(DatabaseServiceABC):
         query = self.model.select()
         return await self.execute(query, fetch="all")
 
-    async def filter(self, where: typing.Mapping = None, **kwargs) -> typing.List[RowProxy]:
-        where = self._construct_whereclause(where, kwargs)
+    async def filter(self, **where) -> typing.List[RowProxy]:
+        where = self._construct_whereclause(where)
         query = self.model.select(where)
         return await self.execute(query, fetch="all")
 
-    async def create(self, data: typing.Mapping = None, **kwargs) -> RowProxy:
-        data = data or {}
-        data = {**data, **kwargs}
+    async def create(self, **data) -> RowProxy:
         query = self.model.insert().values(**data).returning(*self.model.columns)
         return await self.execute(query, fetch="one")
 
-    async def update(
-            self,
-            instance: RowProxy,
-            data: typing.Mapping = None,
-            *,
-            where: typing.Mapping = None,
-            **kwargs
-    ) -> RowProxy:
-        where = self._construct_whereclause(where, kwargs)
-        if not where:
-            # filter by pk if `where` is not provided
-            pk = self._get_pk()
-            where = self.model.columns[pk] == instance[pk]
+    async def update(self, instance: RowProxy, **data) -> RowProxy:
+        pk = self._get_pk()
+        where = self.model.columns[pk] == instance[pk]
         query = self.model.update(where).values(**data).returning(*self.model.columns)
         return await self.execute(query, fetch="one")
 
-    async def delete(
-            self,
-            instance: RowProxy,
-            *,
-            where: typing.Mapping = None,
-            **kwargs
-    ) -> ResultProxy:
-        where = self._construct_whereclause(where, kwargs)
-        if not where:
-            # filter by pk if `where` is not provided
-            pk = self._get_pk()
-            where = self.model.columns[pk] == instance[pk]
+    async def delete(self, instance: RowProxy) -> ResultProxy:
+        pk = self._get_pk()
+        where = self.model.columns[pk] == instance[pk]
         query = self.model.delete(where)
         return await self.execute(query)
 
@@ -130,10 +109,7 @@ class AioPGSAService(DatabaseServiceABC):
         pks = self.model.primary_key.columns.keys()
         return pks[0]
 
-    def _construct_whereclause(self, where, kwargs):
-        where = where or {}
-        where = {**where, **kwargs}
+    def _construct_whereclause(self, where):
         if where:
-            where = and_(self.model.columns[key] == value for key, value in where.items())
-            return where
+            return and_(self.model.columns[key] == value for key, value in where.items())
         return None

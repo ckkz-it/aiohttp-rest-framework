@@ -222,11 +222,11 @@ class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
 
     async def update(self, instance: typing.Any, validated_data: typing.OrderedDict):
         db_service = await self.get_db_service()
-        return await db_service.update(instance, validated_data)
+        return await db_service.update(instance, **validated_data)
 
     async def create(self, validated_data: typing.OrderedDict):
         db_service = await self.get_db_service()
-        return await db_service.create(validated_data)
+        return await db_service.create(**validated_data)
 
     async def get_db_service(self) -> DatabaseServiceABC:
         if asyncio.iscoroutinefunction(self.config.get_connection):
