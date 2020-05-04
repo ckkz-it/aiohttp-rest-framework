@@ -4,6 +4,7 @@ import pytest
 from aiohttp.test_utils import TestClient
 from aiopg.sa.result import RowProxy
 
+from aiohttp_rest_framework import fields
 from aiohttp_rest_framework.serializers import ModelSerializer
 from tests import models
 from tests.aiopg_sa.utils import (
@@ -122,6 +123,8 @@ async def test_destroy_non_existent_user(client: TestClient):
 @pytest.mark.with_client
 async def test_fields_all_for_serializer(user: RowProxy, users_fixtures):
     class UserWithFieldsALLSerializer(ModelSerializer):
+        company_id = fields.Str(required=False)
+
         class Meta:
             model = models.users
             fields = "__all__"

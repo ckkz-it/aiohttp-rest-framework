@@ -5,6 +5,7 @@ from tests import models
 
 class UserSerializer(ModelSerializer):
     password = fields.Str(load_only=True, required=False)
+    company_id = fields.Str(required=False)
 
     class Meta:
         model = models.users

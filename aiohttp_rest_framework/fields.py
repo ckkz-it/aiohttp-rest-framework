@@ -175,10 +175,6 @@ class AioPGSAInferredFieldBuilder(InferredFieldBuilderABC):
         self.model = model
 
     def build(self, **kwargs):
-        assert self.serializer is not None or self.model is not None, (
-            "When use field in standalone mode (without binding to serializer) "
-            "you have to pass `model` kwarg on field initialization"
-        )
         model = self.model if self.model is not None else self.serializer.opts.model
         column = model.columns.get(self.name)
         assert column is not None, (
@@ -198,7 +194,6 @@ class AioPGSAInferredFieldBuilder(InferredFieldBuilderABC):
     def _set_db_specific_kwargs(self, kwargs: dict, column: sa.Column):
         if column.nullable:
             kwargs.setdefault("allow_none", True)
-            kwargs.setdefault("required", False)
         if column.primary_key:
             kwargs.setdefault("dump_only", True)  # pk is read only
             kwargs.setdefault("required", False)
@@ -206,9 +201,9 @@ class AioPGSAInferredFieldBuilder(InferredFieldBuilderABC):
         if column.default and not column.primary_key and not kwargs.get("required", False):
             kwargs["required"] = False
             default = column.default.arg
-            if callable(default):
-                # sqlalchemy wraps callable into lambdas which accepts context,
-                # strip this context argument to make default simple callable (with no arguments)
+            if column.default.is_callable:
+                # sqlalchemy wraps callable into lambdas which accepts dialect context,
+                # strip this context argument to make `default` simple callable (with no arguments)
                 default = partial(default, {})
             kwargs.setdefault("missing", default)  # ma's `missing` is like drf's `default`
         if column.server_default:
