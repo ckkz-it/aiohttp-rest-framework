@@ -6,7 +6,7 @@ from aiopg.sa.result import ResultProxy, RowProxy
 from sqlalchemy import Table, and_
 
 from aiohttp_rest_framework import types
-from aiohttp_rest_framework.exceptions import ObjectNotFound
+from aiohttp_rest_framework.exceptions import MultipleObjectsReturned, ObjectNotFound
 
 __all__ = ["DatabaseServiceABC", "AioPGSAService"]
 
@@ -49,14 +49,16 @@ class AioPGSAService(DatabaseServiceABC):
 
     async def get(self, where: typing.Mapping = None, **kwargs) -> typing.Optional[RowProxy]:
         where = self._construct_whereclause(where, kwargs)
-        query = self.model.select(where).limit(1)
+        query = self.model.select(where)
         try:
-            obj = await self.execute(query, fetch="one")
+            objs = await self.execute(query, fetch="all")
         except Exception:
             raise ObjectNotFound()
-        if obj is None:
+        if len(objs) > 1:
+            raise MultipleObjectsReturned()
+        if len(objs) == 0:
             raise ObjectNotFound()
-        return obj
+        return objs[0]
 
     async def all(self) -> typing.List[RowProxy]:
         query = self.model.select()

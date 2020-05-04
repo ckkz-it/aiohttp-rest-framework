@@ -3,7 +3,9 @@ import typing
 from aiohttp import web
 from aiohttp_cors import CorsViewMixin
 
+from aiohttp_rest_framework import ObjectNotFound
 from aiohttp_rest_framework.db import DatabaseServiceABC
+from aiohttp_rest_framework.exceptions import HTTPNotFound
 from aiohttp_rest_framework.serializers import Serializer
 from aiohttp_rest_framework.settings import APP_CONFIG_KEY, Config
 
@@ -71,7 +73,10 @@ class GenericAPIView(CorsViewMixin, web.View):
     async def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         where = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-        obj = await self.db_service.get(where)  # may raise `ObjectNotFound` exception
+        try:
+            obj = await self.db_service.get(where)
+        except ObjectNotFound:
+            raise HTTPNotFound()
         return obj
 
     async def get_list(self):
