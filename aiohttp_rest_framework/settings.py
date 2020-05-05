@@ -4,7 +4,7 @@ import typing
 from aiohttp import web
 
 from aiohttp_rest_framework.db import AioPGSAService, DatabaseServiceABC
-from aiohttp_rest_framework.fields import AioPGSAInferredFieldBuilder
+from aiohttp_rest_framework.fields import AioPGSAInferredFieldBuilder, patch_ma_fields
 from aiohttp_rest_framework.utils import get_all_model_fields_sa
 
 __all__ = [
@@ -82,3 +82,5 @@ def setup_rest_framework(app: web.Application, settings: typing.Mapping = None) 
 
     global _config
     _config = app_settings
+
+    patch_ma_fields()
