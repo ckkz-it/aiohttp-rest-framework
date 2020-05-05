@@ -1,5 +1,6 @@
 import abc
 import datetime
+import inspect
 import re
 import typing
 from functools import partial
@@ -15,7 +16,51 @@ from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from aiohttp_rest_framework.types import SASerializerFieldMapping
 from aiohttp_rest_framework.utils import ClassLookupDict
 
-__all__ = ["Enum", "UUID", "Interval"] + ma_fields_all
+# __all__ = ["Enum", "UUID", "Interval", "patch_ma_fields"] + ma_fields_all
+
+# A flag to mark that marshamallow's fields were patched by aiohttp-rest-framework
+# i.e. `read_only` and `write_only` were mapped to `dump_only` and `load_only`,
+# `required` set to True by default (initially it's False, by should be True like in drf)
+_MA_FIELDS_PATCHED = False
+
+
+def patch_ma_fields():
+    """
+    Make all marshmallow's fields required by default
+    """
+    global _MA_FIELDS_PATCHED
+    if _MA_FIELDS_PATCHED:
+        return
+    globals_ = globals()
+    items_to_update = {}
+    for key, value in globals_.items():
+        try:
+            if issubclass(value, ma.fields.FieldABC):
+                class patched(value):
+                    _rf_patched = True
+
+                    def __init__(self, *args, **kwargs):
+                        kwargs.setdefault("required", True)
+                        if "read_only" in kwargs:
+                            kwargs["load_only"] = kwargs.pop("read_only")
+                        if "write_only" in kwargs:
+                            kwargs["dump_only"] = kwargs.pop("write_only")
+                        super(self.__class__, self).__init__(*args, **kwargs)
+
+                mro = inspect.getmro(patched)[1:]  # remove `patched` class from mro
+                patched = type(key, mro, dict(vars(patched)))
+                items_to_update[key] = patched
+        except TypeError:
+            pass
+
+    globals_.update(**items_to_update)
+
+    # also update mapping with patched classes
+    for key, value in sa_ma_pg_field_mapping.items():
+        if value.__name__ in items_to_update:
+            sa_ma_pg_field_mapping[key] = items_to_update[value.__name__]  # noqa
+
+    _MA_FIELDS_PATCHED = True
 
 
 # @todo: add support for multiple enums
@@ -187,7 +232,6 @@ class AioPGSAInferredFieldBuilder(InferredFieldBuilderABC):
 
         self._set_db_specific_kwargs(kwargs, column)
         self._set_field_specific_kwargs(kwargs, field_cls, column)
-        kwargs.setdefault("required", True)  # by default all fields are required
         field = field_cls(**kwargs)
         return field
 
@@ -197,7 +241,8 @@ class AioPGSAInferredFieldBuilder(InferredFieldBuilderABC):
         if column.primary_key:
             kwargs.setdefault("dump_only", True)  # pk is read only
             kwargs.setdefault("required", False)
-        # can't set `missing` when `required` is true
+        # can't set `missing` when `required` is true, so check it first
+        # also do not set default for pk, default value will be populated on db (or sa) level
         if column.default and not column.primary_key and not kwargs.get("required", False):
             kwargs["required"] = False
             default = column.default.arg
