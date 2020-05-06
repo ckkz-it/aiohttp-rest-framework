@@ -16,11 +16,10 @@ class empty:
 
     It is required because `None` may be a valid input or output value.
     """
-    pass
 
 
 class Meta:
-    pass
+    """Use as default when `Meta` is not provided is serializer"""
 
 
 class SerializerOpts(ma.SchemaOpts):
@@ -202,16 +201,19 @@ class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
             self.opts.fields = self._get_all_model_fields()
         super()._init_fields()
         # replace marshmallow inferred fields with database/schema specific fields
-        inferred_field_builder = self.config.inferred_field_builder
+        field_builder = self.config.field_builder()
         for field_name, field_obj in self.fields.items():
             if isinstance(field_obj, ma.fields.Inferred):
-                inferred_field = inferred_field_builder(name=field_name, serializer=self).build()
-                self._bind_field(field_name, inferred_field)
-                self.fields[field_name] = inferred_field
+                new_field = field_builder.build(
+                    name=field_name, serializer=self, model=self.opts.model
+                )
+                self._bind_field(field_name, new_field)
+                self.fields[field_name] = new_field
+
                 if field_name in self.dump_fields:
-                    self.dump_fields[field_name] = inferred_field
+                    self.dump_fields[field_name] = new_field
                 if field_name in self.load_fields:
-                    self.load_fields[field_name] = inferred_field
+                    self.load_fields[field_name] = new_field
 
     def _get_all_model_fields(self) -> typing.Sequence[str]:
         """

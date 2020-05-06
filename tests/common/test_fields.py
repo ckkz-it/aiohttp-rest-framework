@@ -63,8 +63,8 @@ def test_enum_field_invalid_value():
     ("3 hours 3 seconds", datetime.timedelta(hours=3, seconds=3)),
     (86400, datetime.timedelta(seconds=86400)),
 ])
-# no need to test serialization, because serialization is inherited from ma's `TimeDelta` field
 async def test_interval_field_deserialization(interval, expected_timedelta):
+    # no need to test serialization, because serialization is inherited from ma's `TimeDelta` field
     value = fields.Interval().deserialize(interval)
     assert isinstance(value, datetime.timedelta), "Interval deserialized not in timedelta"
     assert value == expected_timedelta, "invalid Interval deserialization value"
@@ -83,7 +83,7 @@ def test_interval_invalid_range_err():
 
 def test_interval_zero_range_not_allowed():
     with pytest.raises(ma.ValidationError):
-        fields.Interval(allow_zero=False).deserialize(0)
+        fields.Interval().deserialize(0)
 
 
 def test_interval_zero_range_allowed():
@@ -96,6 +96,8 @@ def test_ma_fields_patched():
         try:
             if issubclass(value, ma.fields.Field):
                 assert value._rf_patched  # noqa
-                assert value().required, "`required` default True wasn't patched"
+                assert value().required, (
+                    f"`required` default True was not patched for {value.__name__} field"
+                )
         except TypeError:
             pass

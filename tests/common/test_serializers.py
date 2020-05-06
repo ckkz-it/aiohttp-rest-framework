@@ -1,3 +1,4 @@
+import marshmallow as ma
 import pytest
 
 from aiohttp_rest_framework import fields
@@ -6,8 +7,8 @@ from tests import models
 from tests.base_app import get_base_app
 
 
-def test_non_existing_field_passed_to_serializer(test_user_data: dict):
-    invalid_field = "some_invalid"
+def test_non_existing_model_field_passed_to_serializer(test_user_data: dict):
+    invalid_field = "invalid_field"
 
     class UserSerializerWithInvalidFields(ModelSerializer):
         class Meta:
@@ -16,6 +17,21 @@ def test_non_existing_field_passed_to_serializer(test_user_data: dict):
 
     with pytest.raises(AssertionError, match=f"{invalid_field} was not found for"):
         UserSerializerWithInvalidFields(test_user_data)
+
+
+def test_non_existing_model_field_but_defined_in_serializer(test_user_data: dict):
+    invalid_field = "invalid_field"
+
+    class UserSerializer(ModelSerializer):
+        invalid_field = ma.fields.Str()
+
+        class Meta:
+            model = models.users
+            fields = ("name", "email", invalid_field)
+
+    serializer = UserSerializer(test_user_data)
+    assert invalid_field in serializer.fields
+    assert isinstance(serializer.fields[invalid_field], ma.fields.Str)
 
 
 async def test_async_get_connection_passed_to_config():
@@ -72,5 +88,6 @@ def test_serializer_data_attr_with_initial_data():
 
 def test_serializer_data_attr_with_instance_and_errors():
     serializer = DataAttrSerializer(instance={"test": 123}, data={"test": "not an integer"})
-    serializer.is_valid(raise_exception=False)
+    serializer.is_valid()
     _ = serializer.data
+    assert serializer.errors

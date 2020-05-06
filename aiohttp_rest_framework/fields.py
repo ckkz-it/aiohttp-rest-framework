@@ -203,7 +203,7 @@ sa_ma_pg_field_mapping: SASerializerFieldMapping = {
 }
 
 
-class InferredFieldBuilderABC(metaclass=abc.ABCMeta):
+class FieldBuilderABC(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def build(self, *args, **kwargs) -> ma.fields.Field:
         """
@@ -213,17 +213,17 @@ class InferredFieldBuilderABC(metaclass=abc.ABCMeta):
         pass
 
 
-class AioPGSAInferredFieldBuilder(InferredFieldBuilderABC):
-    def __init__(self, name: str, serializer=None, model: sa.Table = None):
-        self.name = name
-        self.serializer = serializer
-        self.model = model
-
-    def build(self, **kwargs):
-        model = self.model if self.model is not None else self.serializer.opts.model
-        column = model.columns.get(self.name)
+class AioPGSAFieldBuilder(FieldBuilderABC):
+    def build(
+            self,
+            name: str,
+            serializer=None,
+            **kwargs
+    ):
+        model: sa.Table = serializer.opts.model
+        column: sa.Column = model.columns.get(name)
         assert column is not None, (
-            f"{self.name} was not found for {self.serializer.__class__.__name__} serializer "
+            f"{name} was not found for {serializer.__class__.__name__} serializer "
             f"in {model.name} model"
         )
 
