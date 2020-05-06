@@ -5,7 +5,7 @@ from aiohttp import web
 
 from aiohttp_rest_framework.db import AioPGSAService, DatabaseServiceABC
 from aiohttp_rest_framework.fields import AioPGSAFieldBuilder, patch_ma_fields
-from aiohttp_rest_framework.utils import get_all_model_fields_sa
+from aiohttp_rest_framework.utils import get_model_fields_sa
 
 __all__ = [
     "AIOPG_SA",
@@ -23,7 +23,7 @@ db_orm_mappings = {
     AIOPG_SA: {
         "service": AioPGSAService,
         "field_builder": AioPGSAFieldBuilder,
-        "all_model_fields_getter": get_all_model_fields_sa,
+        "model_fields_getter": get_model_fields_sa,
     }
 }
 
@@ -63,7 +63,7 @@ class Config:
 
         self.db_service_class = db_service or self._db_orm_mapping["service"]
         self.field_builder = self._db_orm_mapping["field_builder"]
-        self.get_all_model_fields = self._db_orm_mapping["all_model_fields_getter"]
+        self.get_model_fields = self._db_orm_mapping["model_fields_getter"]
 
 
 APP_CONFIG_KEY = "rest_framework"

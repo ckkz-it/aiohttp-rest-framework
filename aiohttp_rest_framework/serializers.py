@@ -220,7 +220,7 @@ class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
     def _init_fields(self) -> None:
         if self._is_fields_all:  # is set in meta class
             # add model fields to declared on serializer fields
-            combined_fields = chain(self._get_all_model_fields(), self.declared_fields.keys())
+            combined_fields = chain(self._get_model_field_names(), self.declared_fields.keys())
             self.opts.fields = self.set_class(combined_fields)
         super()._init_fields()
         # replace marshmallow inferred fields with database/schema specific fields
@@ -238,12 +238,12 @@ class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
                 if field_name in self.load_fields:
                     self.load_fields[field_name] = new_field
 
-    def _get_all_model_fields(self) -> typing.Sequence[str]:
+    def _get_model_field_names(self) -> typing.Sequence[str]:
         """
         Override this method for custom logic getting model fields when __all__ specified
         By default it's specified in config for concrete db/orm mapping
         """
-        return self.config.get_all_model_fields(self.opts.model)
+        return self.config.get_model_fields(self.opts.model)
 
     async def update(self, instance: typing.Any, validated_data: typing.OrderedDict):
         db_service = await self.get_db_service()
