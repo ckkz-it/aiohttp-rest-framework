@@ -47,3 +47,10 @@ class ClassLookupDict(typing.Generic[C1, C2]):
 
 def get_all_model_fields_sa(model: sa.Table) -> typing.Tuple[str]:
     return tuple(str(column.name) for column in model.columns)
+
+
+def safe_issubclass(first, other):
+    try:
+        return issubclass(first, other)
+    except TypeError:
+        return False

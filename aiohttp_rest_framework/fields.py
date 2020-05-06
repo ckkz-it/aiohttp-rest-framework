@@ -14,9 +14,9 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSON
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 
 from aiohttp_rest_framework.types import SASerializerFieldMapping
-from aiohttp_rest_framework.utils import ClassLookupDict
+from aiohttp_rest_framework.utils import ClassLookupDict, safe_issubclass
 
-# __all__ = ["Enum", "UUID", "Interval", "patch_ma_fields"] + ma_fields_all
+__all__ = ["Enum", "UUID", "Interval", "patch_ma_fields"] + ma_fields_all
 
 # A flag to mark that marshamallow's fields were patched by aiohttp-rest-framework
 # i.e. `read_only` and `write_only` were mapped to `dump_only` and `load_only`,
@@ -34,24 +34,19 @@ def patch_ma_fields():
     globals_ = globals()
     items_to_update = {}
     for key, value in globals_.items():
-        try:
-            if issubclass(value, ma.fields.FieldABC):
-                class patched(value):
-                    _rf_patched = True
+        if safe_issubclass(value, ma.fields.FieldABC):
+            class patched(value):
+                _rf_patched = True
 
-                    def __init__(self, *args, **kwargs):
-                        kwargs.setdefault("required", True)
-                        if "read_only" in kwargs:
-                            kwargs["load_only"] = kwargs.pop("read_only")
-                        if "write_only" in kwargs:
-                            kwargs["dump_only"] = kwargs.pop("write_only")
-                        super(self.__class__, self).__init__(*args, **kwargs)
+                def __init__(self, *args, **kwargs):
+                    kwargs.setdefault("required", True)
+                    kwargs.setdefault("dump_only", kwargs.pop("read_only", False))
+                    kwargs.setdefault("load_only", kwargs.pop("write_only", False))
+                    super(self.__class__, self).__init__(*args, **kwargs)
 
-                mro = inspect.getmro(patched)[1:]  # remove `patched` class from mro
-                patched = type(key, mro, dict(vars(patched)))
-                items_to_update[key] = patched
-        except TypeError:
-            pass
+            mro = inspect.getmro(patched)[1:]  # remove `patched` class from mro
+            patched = type(key, mro, dict(vars(patched)))
+            items_to_update[key] = patched
 
     globals_.update(**items_to_update)
 

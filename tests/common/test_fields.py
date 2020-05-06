@@ -4,7 +4,8 @@ import enum
 import marshmallow as ma
 import pytest
 
-from aiohttp_rest_framework import fields
+from aiohttp_rest_framework import fields, Serializer
+from aiohttp_rest_framework.utils import safe_issubclass
 
 
 class MyEnum(enum.Enum):
@@ -91,13 +92,43 @@ def test_interval_zero_range_allowed():
     assert interval.total_seconds() == 0
 
 
-def test_ma_fields_patched():
-    for key, value in vars(fields).items():
-        try:
-            if issubclass(value, ma.fields.Field):
-                assert value._rf_patched  # noqa
-                assert value().required, (
-                    f"`required` default True was not patched for {value.__name__} field"
-                )
-        except TypeError:
-            pass
+def test_ma_fields_patched_required():
+    ma_fields = {key: value
+                 for key, value in vars(fields).items()
+                 if safe_issubclass(value, ma.fields.Field)}
+    for key, value in ma_fields.items():
+        assert value._rf_patched  # noqa
+        if value is fields.Nested:
+            # Nested field require to pass positional argument - Schema
+            field_obj = value(ma.Schema())
+        elif value is fields.List:
+            # List field required to pass positional argument - Field
+            field_obj = value(fields.Str())
+        elif value is fields.Tuple:
+            # Tuple field required to pass positional argument - tuple
+            field_obj = value(tuple())
+        elif value is fields.Constant:
+            # Tuple field required to pass positional argument - constant
+            field_obj = value(1)
+        elif value is fields.Pluck:
+            # Pluck field required to pass two positional arguments - Schema and field_name
+            field_obj = value(ma.Schema(), field_name="test")
+        elif value is fields.Enum:
+            # Pluck field required to pass two positional arguments - Schema and field_name
+            field_obj = value(enum.Enum)
+        else:
+            field_obj = value()
+
+        assert field_obj.required, (
+            f"`required` default True was not patched for {value.__name__} field"
+        )
+
+
+def test_ma_fields_patched_write_read_only():
+    class ReadWriteOnlyFieldsSerializer(Serializer):
+        write = fields.Str(write_only=True)
+        read = fields.Interval(read_only=True)
+
+    serializer = ReadWriteOnlyFieldsSerializer()
+    assert serializer.fields["write"].load_only is True
+    assert serializer.fields["read"].dump_only is True
