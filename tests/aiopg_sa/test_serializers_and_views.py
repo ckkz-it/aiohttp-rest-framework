@@ -5,7 +5,7 @@ from aiohttp.test_utils import TestClient
 from aiopg.sa.result import RowProxy
 
 from aiohttp_rest_framework import fields
-from aiohttp_rest_framework.serializers import ModelSerializer
+from aiohttp_rest_framework.serializers import ModelSerializer, Serializer
 from tests import models
 from tests.aiopg_sa.utils import (
     create_data_fixtures,
@@ -15,6 +15,7 @@ from tests.aiopg_sa.utils import (
     drop_tables,
 )
 from tests.config import db
+from tests.serializers import UserSerializer
 
 
 def setup_module():
@@ -145,3 +146,12 @@ async def test_fields_all_for_serializer(user: RowProxy, users_fixtures):
         assert field_name in models.users.columns, (
             f"unknown serialized field '{field_name}' for users model"
         )
+
+
+async def test_serializer_field_inheritance():
+    class InheritSerializer(UserSerializer):
+        pass
+
+    serializer = InheritSerializer()
+    assert serializer.opts.model is not None
+    assert len(serializer.fields) == len(UserSerializer().fields)

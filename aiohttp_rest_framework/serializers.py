@@ -31,10 +31,22 @@ class SerializerOpts(ma.SchemaOpts):
 
 class SerializerMeta(ma.schema.SchemaMeta):
     def __new__(mcs, name, bases, attrs):
-        meta: type = attrs.get("Meta", Meta)
+        meta = mcs.get_meta(bases, attrs)
         meta.ordered = getattr(meta, "ordered", True)
         attrs["Meta"] = meta
         return super().__new__(mcs, name, bases, attrs)
+
+    @classmethod
+    def get_meta(mcs, bases, attrs):
+        meta: type = attrs.get("Meta")
+        if meta:
+            return meta
+        # inherit Meta from first base class with Meta declared
+        for base_ in bases:
+            if hasattr(base_, "Meta"):
+                return base_.Meta
+        # otherwise use empty Meta
+        return Meta
 
 
 class Serializer(ma.Schema):
@@ -174,13 +186,8 @@ class ModelSerializerOpts(SerializerOpts):
 
 class ModelSerializerMeta(SerializerMeta):
     def __new__(mcs, name, bases, attrs):
-        meta: type = attrs.get("Meta")
-        is_fields_all = False
-        if meta and hasattr(meta, "fields"):
-            if meta.fields == "__all__":
-                is_fields_all = True
-                del meta.fields
-                attrs["Meta"] = meta
+        meta: type = mcs.get_meta(bases, attrs)
+        is_fields_all = mcs.get_is_fields_all(meta, bases, attrs)
 
         klass = super().__new__(mcs, name, bases, attrs)
         if not klass.opts.abstract:  # if not abstract, has to specify model
@@ -189,6 +196,21 @@ class ModelSerializerMeta(SerializerMeta):
             )
             klass._is_fields_all = is_fields_all
         return klass
+
+    @classmethod
+    def get_is_fields_all(mcs, meta, bases, attrs) -> bool:
+        if meta and hasattr(meta, "fields"):
+            if meta.fields == "__all__":
+                del meta.fields
+                attrs["Meta"] = meta
+                return True
+            # it has `fields` attr but it's not set to `__all__`
+            return False
+
+        for base_ in bases:  # check if it's set in base classes
+            if hasattr(base_, "_is_fields_all"):
+                return True
+        return False
 
 
 class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
