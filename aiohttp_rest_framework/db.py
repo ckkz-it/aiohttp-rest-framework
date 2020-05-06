@@ -40,6 +40,10 @@ class DatabaseServiceABC(metaclass=abc.ABCMeta):
     async def delete(self, *args, **kwargs):
         pass
 
+    @abc.abstractmethod
+    async def execute(self, *args, **kwargs):
+        pass
+
 
 class AioPGSAService(DatabaseServiceABC):
     def __init__(self, connection: Engine, model: Table):
