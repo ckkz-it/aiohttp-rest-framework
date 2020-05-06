@@ -9,3 +9,6 @@ ExecuteResultAioPgSA = typing.Union[typing.List[RowProxy], typing.Optional[RowPr
 Fetch = typing.Literal["one", "all"]
 
 SASerializerFieldMapping = typing.Dict[typing.Type[TypeEngine], typing.Type[ma.fields.Field]]
+
+DbOrmMappingEntity = typing.Mapping[str, typing.Any]
+DbOrmMapping = typing.Mapping[str, DbOrmMappingEntity]

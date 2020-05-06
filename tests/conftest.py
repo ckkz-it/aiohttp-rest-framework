@@ -18,16 +18,16 @@ def pytest_runtest_setup(item):
 
 
 @pytest.fixture(scope="session")
-def users_fixtures(get_fixtures_by_name):
-    return get_fixtures_by_name("users")
+def get_fixtures_by_name(db_fixtures):
+    def _get_fixtures(name: str):
+        return db_fixtures[name]
+
+    return _get_fixtures
 
 
 @pytest.fixture(scope="session")
-def get_fixtures_by_name():
-    def _get_fixtres(name: str):
-        return get_fixtures_data()[name]
-
-    return _get_fixtres
+def db_fixtures():
+    return get_fixtures_data()
 
 
 @pytest.fixture(scope="session")

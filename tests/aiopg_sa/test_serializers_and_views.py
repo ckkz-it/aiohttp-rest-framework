@@ -121,7 +121,7 @@ async def test_destroy_non_existent_user(client: TestClient):
 
 
 @pytest.mark.with_client
-async def test_fields_all_for_serializer(user: RowProxy, users_fixtures):
+async def test_fields_all_for_serializer(user: RowProxy, test_user_data):
     class UserWithFieldsALLSerializer(ModelSerializer):
         company_id = fields.Str(required=False)
 
@@ -135,9 +135,7 @@ async def test_fields_all_for_serializer(user: RowProxy, users_fixtures):
             f"unknown serialized field '{field_name}' for users model"
         )
 
-    user_data = users_fixtures[0]
-    user_data["email"] = "new@mail.com"  # emails are unique, change to any non existent
-    serializer = UserWithFieldsALLSerializer(data=user_data)
+    serializer = UserWithFieldsALLSerializer(data=test_user_data)
     serializer.is_valid(raise_exception=True)
     assert serializer.validated_data
     await serializer.save()

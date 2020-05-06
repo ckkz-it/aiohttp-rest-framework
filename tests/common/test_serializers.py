@@ -5,7 +5,6 @@ from aiohttp_rest_framework import fields
 from aiohttp_rest_framework.serializers import ModelSerializer, Serializer
 from tests import models
 from tests.base_app import get_base_app
-from tests.serializers import UserSerializer
 
 
 def test_non_existing_model_field_passed_to_serializer(test_user_data: dict):
@@ -22,9 +21,10 @@ def test_non_existing_model_field_passed_to_serializer(test_user_data: dict):
 
 def test_non_existing_model_field_but_defined_in_serializer(test_user_data: dict):
     invalid_field = "invalid_field"
+    field_cls = ma.fields.Str
 
     class UserSerializer(ModelSerializer):
-        invalid_field = ma.fields.Str()
+        invalid_field = field_cls()
 
         class Meta:
             model = models.users
@@ -32,7 +32,7 @@ def test_non_existing_model_field_but_defined_in_serializer(test_user_data: dict
 
     serializer = UserSerializer(test_user_data)
     assert invalid_field in serializer.fields
-    assert isinstance(serializer.fields[invalid_field], ma.fields.Str)
+    assert isinstance(serializer.fields[invalid_field], field_cls)
 
 
 async def test_async_get_connection_passed_to_config():
@@ -96,17 +96,20 @@ def test_serializer_data_attr_with_instance_and_errors():
 
 
 def test_serializer_field_inheritance():
-    class InheritSerializer(UserSerializer):
+    class BaseSerializer(Serializer):
+        field_one = fields.Int()
+        fields_two = fields.Str()
+
+    class InheritSerializer(BaseSerializer):
         pass
 
     serializer = InheritSerializer()
-    assert serializer.opts.model is not None
-    assert len(serializer.fields) == len(UserSerializer().fields)
+    assert len(serializer.fields) == len(BaseSerializer().fields)
 
 
 def test_serializer_fields_all_and_custom_field():
     class Ser(ModelSerializer):
-        custom = fields.Constant(5)
+        custom = fields.Str()
 
         class Meta:
             model = models.users

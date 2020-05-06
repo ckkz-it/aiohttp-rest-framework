@@ -4,7 +4,8 @@ import typing
 from aiohttp import web
 
 from aiohttp_rest_framework.db import AioPGSAService, DatabaseServiceABC
-from aiohttp_rest_framework.fields import AioPGSAFieldBuilder, patch_ma_fields
+from aiohttp_rest_framework.fields import AioPGSAFieldBuilder, patch_marshmallow_fields
+from aiohttp_rest_framework.types import DbOrmMapping
 from aiohttp_rest_framework.utils import get_model_fields_sa
 
 __all__ = [
@@ -19,7 +20,7 @@ __all__ = [
 AIOPG_SA = "aiopg_sa"
 SCHEMA_TYPES = (AIOPG_SA,)
 
-db_orm_mappings = {
+db_orm_mappings: DbOrmMapping = {
     AIOPG_SA: {
         "service": AioPGSAService,
         "field_builder": AioPGSAFieldBuilder,
@@ -83,4 +84,4 @@ def setup_rest_framework(app: web.Application, settings: typing.Mapping = None) 
     global _config
     _config = app_settings
 
-    patch_ma_fields()
+    patch_marshmallow_fields()

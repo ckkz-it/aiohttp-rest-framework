@@ -83,9 +83,9 @@ async def test_db_update(get_db_service, user: RowProxy):
 
 
 @pytest.mark.run_loop
-async def test_db_multiple_objects_returned(get_db_service, users_fixtures):
+async def test_db_multiple_objects_returned(get_db_service, get_fixtures_by_name):
     service: AioPGSAService = await get_db_service(models.users)
-    duplicated_phone = users_fixtures[1]["phone"]
+    duplicated_phone = get_fixtures_by_name("users")[1]["phone"]
     with pytest.raises(MultipleObjectsReturned):
         await service.get(phone=duplicated_phone)
 

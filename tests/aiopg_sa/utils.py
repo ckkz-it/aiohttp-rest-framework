@@ -41,7 +41,7 @@ def drop_pg_db(db_name: str):
 
 
 @contextmanager
-def sync_engine_connection() -> sa.engine.Engine:
+def sync_engine() -> sa.engine.Engine:
     engine = sa.create_engine(postgres_url)
     try:
         yield engine
@@ -62,12 +62,12 @@ async def async_engine_connection():
 
 def create_tables():
     # use sync engine here because `aiopg.sa` Engine doesn't support `create_all`
-    with sync_engine_connection() as engine:
+    with sync_engine() as engine:
         meta.create_all(bind=engine)
 
 
 def drop_tables():
-    with sync_engine_connection() as engine:
+    with sync_engine() as engine:
         meta.drop_all(bind=engine)
 
 
