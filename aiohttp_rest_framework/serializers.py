@@ -1,6 +1,7 @@
 import asyncio
 import copy
 import typing
+from itertools import chain
 
 import marshmallow as ma
 
@@ -199,12 +200,11 @@ class ModelSerializerMeta(SerializerMeta):
 
     @classmethod
     def get_is_fields_all(mcs, meta, bases, attrs) -> bool:
-        if meta and hasattr(meta, "fields"):
+        if hasattr(meta, "fields"):
             if meta.fields == "__all__":
                 del meta.fields
                 attrs["Meta"] = meta
                 return True
-            # it has `fields` attr but it's not set to `__all__`
             return False
 
         for base_ in bases:  # check if it's set in base classes
@@ -219,8 +219,9 @@ class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
 
     def _init_fields(self) -> None:
         if self._is_fields_all:  # is set in meta class
-            # replace `fields = "__all__"` with actual model fields
-            self.opts.fields = self._get_all_model_fields()
+            # add model fields to declared on serializer fields
+            combined_fields = chain(self._get_all_model_fields(), self.declared_fields.keys())
+            self.opts.fields = self.set_class(combined_fields)
         super()._init_fields()
         # replace marshmallow inferred fields with database/schema specific fields
         field_builder = self.config.field_builder()

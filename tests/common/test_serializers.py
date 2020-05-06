@@ -5,6 +5,7 @@ from aiohttp_rest_framework import fields
 from aiohttp_rest_framework.serializers import ModelSerializer, Serializer
 from tests import models
 from tests.base_app import get_base_app
+from tests.serializers import UserSerializer
 
 
 def test_non_existing_model_field_passed_to_serializer(test_user_data: dict):
@@ -91,3 +92,26 @@ def test_serializer_data_attr_with_instance_and_errors():
     serializer.is_valid()
     _ = serializer.data
     assert serializer.errors
+    assert "test" in serializer.errors
+
+
+def test_serializer_field_inheritance():
+    class InheritSerializer(UserSerializer):
+        pass
+
+    serializer = InheritSerializer()
+    assert serializer.opts.model is not None
+    assert len(serializer.fields) == len(UserSerializer().fields)
+
+
+def test_serializer_fields_all_and_custom_field():
+    class Ser(ModelSerializer):
+        custom = fields.Constant(5)
+
+        class Meta:
+            model = models.users
+            fields = "__all__"
+
+    serializer = Ser()
+    assert "custom" in serializer.fields
+    assert len(models.users.columns) + 1 == len(serializer.fields)
