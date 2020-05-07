@@ -10,6 +10,8 @@ isort = {extras = ["pipfile"],version = "*"}
 pytest-aiohttp = "*"
 python-dotenv = "*"
 pytest-cov = "*"
+sphinx = "*"
+twine = "*"
 
 [packages]
 marshmallow = "*"
