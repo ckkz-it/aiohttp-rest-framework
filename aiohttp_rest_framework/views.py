@@ -14,6 +14,7 @@ from aiohttp_rest_framework.serializers import Serializer
 from aiohttp_rest_framework.settings import Config
 
 __all__ = (
+    "APIView",
     "GenericAPIView",
     "CreateAPIView",
     "ListAPIView",
@@ -27,9 +28,32 @@ __all__ = (
 )
 
 
-class GenericAPIView(CorsViewMixin, web.View):
-    lookup_field = "id"
-    lookup_url_kwarg = None
+class APIView(CorsViewMixin, web.View):
+    """Base API View with cors support.
+
+    Should be used when you won't use serializer and models
+    for particular view.
+    """
+
+    @property
+    def rest_config(self) -> Config:
+        try:
+            return self.request.app[APP_CONFIG_KEY]
+        except KeyError:
+            msg = (
+                "Looks like you didn't call `setup_rest_framework()` "
+                "function for your application."
+            )
+            raise AssertionError(msg)
+
+
+class GenericAPIView(APIView):
+    """
+    A Generic API View to work with serializers and models
+    """
+
+    lookup_field: str = "id"
+    lookup_url_kwarg: str = None
 
     serializer_class: typing.Type[Serializer] = None
 
@@ -46,6 +70,7 @@ class GenericAPIView(CorsViewMixin, web.View):
         self.detail = lookup_field_value is not None
 
     async def get_db_service(self) -> DatabaseServiceABC:
+        """Get database service applicable for current engine """
         connection = await self.rest_config.get_connection()
         return self.rest_config.db_service_class(connection, self.model)
 
@@ -72,17 +97,6 @@ class GenericAPIView(CorsViewMixin, web.View):
             "view": self,
             "config": self.rest_config,
         }
-
-    @property
-    def rest_config(self) -> Config:
-        try:
-            return self.request.app[APP_CONFIG_KEY]
-        except KeyError:
-            msg = (
-                "Looks like you didn't call `setup_rest_framework()` "
-                "function for your application."
-            )
-            raise AssertionError(msg)
 
     async def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
