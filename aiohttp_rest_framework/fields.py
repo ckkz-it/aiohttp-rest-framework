@@ -1,6 +1,5 @@
 import abc
 import datetime
-import inspect
 import re
 import typing
 from functools import partial

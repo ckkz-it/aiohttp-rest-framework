@@ -4,7 +4,8 @@ import enum
 import marshmallow as ma
 import pytest
 
-from aiohttp_rest_framework import Serializer, fields
+from aiohttp_rest_framework import fields
+from aiohttp_rest_framework.serializers import Serializer
 from aiohttp_rest_framework.utils import safe_issubclass
 
 

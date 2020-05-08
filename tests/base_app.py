@@ -2,7 +2,7 @@ import typing
 
 from aiohttp import web
 
-from aiohttp_rest_framework.settings import setup_rest_framework
+from aiohttp_rest_framework import setup_rest_framework
 from tests.routes import setup_routes
 
 

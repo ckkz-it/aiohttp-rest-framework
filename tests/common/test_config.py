@@ -2,7 +2,8 @@ import asyncio
 
 import pytest
 
-from aiohttp_rest_framework.settings import AIOPG_SA, APP_CONFIG_KEY, DEFAULT_APP_CONN_PROP
+from aiohttp_rest_framework import APP_CONFIG_KEY
+from aiohttp_rest_framework.settings import AIOPG_SA, DEFAULT_APP_CONN_PROP
 from tests.base_app import get_base_app
 
 

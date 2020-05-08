@@ -3,11 +3,11 @@ import typing
 from aiohttp import web
 from aiohttp_cors import CorsViewMixin
 
-from aiohttp_rest_framework import ObjectNotFound
+from aiohttp_rest_framework import APP_CONFIG_KEY
 from aiohttp_rest_framework.db import DatabaseServiceABC
-from aiohttp_rest_framework.exceptions import HTTPNotFound
+from aiohttp_rest_framework.exceptions import HTTPNotFound, ObjectNotFound
 from aiohttp_rest_framework.serializers import Serializer
-from aiohttp_rest_framework.settings import APP_CONFIG_KEY, Config
+from aiohttp_rest_framework.settings import Config
 
 
 class GenericAPIView(CorsViewMixin, web.View):

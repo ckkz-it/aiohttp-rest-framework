@@ -3,8 +3,8 @@ import asyncio
 import pytest
 from aiopg.sa.result import RowProxy
 
-from aiohttp_rest_framework import MultipleObjectsReturned, ObjectNotFound
 from aiohttp_rest_framework.db import AioPGSAService
+from aiohttp_rest_framework.exceptions import MultipleObjectsReturned, ObjectNotFound
 from tests import models
 from tests.aiopg_sa.utils import (
     create_data_fixtures,

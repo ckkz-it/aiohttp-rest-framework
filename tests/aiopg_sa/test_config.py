@@ -1,4 +1,4 @@
-from aiohttp_rest_framework.settings import APP_CONFIG_KEY
+from aiohttp_rest_framework import APP_CONFIG_KEY
 from tests.aiopg_sa.app import get_app
 from tests.aiopg_sa.utils import create_pg_db, drop_pg_db
 from tests.config import db

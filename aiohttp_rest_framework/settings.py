@@ -4,18 +4,17 @@ import typing
 from aiohttp import web
 
 from aiohttp_rest_framework.db import AioPGSAService, DatabaseServiceABC
-from aiohttp_rest_framework.fields import AioPGSAFieldBuilder, patch_marshmallow_fields
+from aiohttp_rest_framework.fields import AioPGSAFieldBuilder
 from aiohttp_rest_framework.types import DbOrmMapping
 from aiohttp_rest_framework.utils import get_model_fields_sa
 
-__all__ = [
+__all__ = (
     "AIOPG_SA",
     "SCHEMA_TYPES",
     "Config",
-    "APP_CONFIG_KEY",
-    "setup_rest_framework",
     "get_global_config",
-]
+    "set_global_config",
+)
 
 AIOPG_SA = "aiopg_sa"
 SCHEMA_TYPES = (AIOPG_SA,)
@@ -67,8 +66,6 @@ class Config:
         self.get_model_fields = self._db_orm_mapping["model_fields_getter"]
 
 
-APP_CONFIG_KEY = "rest_framework"
-
 _config: typing.Optional[Config] = None
 
 
@@ -76,12 +73,6 @@ def get_global_config() -> Config:
     return _config
 
 
-def setup_rest_framework(app: web.Application, settings: typing.Mapping = None) -> None:
-    user_settings = settings or {}
-    app_settings = Config(app, **user_settings)
-    app[APP_CONFIG_KEY] = app_settings
-
+def set_global_config(config: Config) -> None:
     global _config
-    _config = app_settings
-
-    patch_marshmallow_fields()
+    _config = config

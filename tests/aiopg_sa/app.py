@@ -4,7 +4,7 @@ from functools import partial
 import aiopg.sa
 from aiohttp import web
 
-from aiohttp_rest_framework.settings import APP_CONFIG_KEY
+from aiohttp_rest_framework import APP_CONFIG_KEY
 from tests.base_app import get_base_app
 from tests.config import postgres_url
 
