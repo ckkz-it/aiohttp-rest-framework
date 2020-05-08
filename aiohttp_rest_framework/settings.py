@@ -9,8 +9,6 @@ from aiohttp_rest_framework.types import DbOrmMapping
 from aiohttp_rest_framework.utils import get_model_fields_sa
 
 __all__ = (
-    "AIOPG_SA",
-    "SCHEMA_TYPES",
     "Config",
     "get_global_config",
     "set_global_config",
