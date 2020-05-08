@@ -5,7 +5,7 @@ from aiohttp import web
 from aiohttp_rest_framework.fields import patch_marshmallow_fields
 from aiohttp_rest_framework.settings import Config, set_global_config
 
-__version__ = "0.0.1"
+__version__ = "0.0.2a"
 
 APP_CONFIG_KEY = "rest_framework"
 
