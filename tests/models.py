@@ -32,6 +32,7 @@ companies = sa.Table(
 
 class AioPGSAEnum(enum.Enum):
     test = "test"
+    test2 = "test2"
 
 
 aiopg_sa_fields = sa.Table(

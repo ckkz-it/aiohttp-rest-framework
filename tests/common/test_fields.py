@@ -10,6 +10,7 @@ from aiohttp_rest_framework.utils import safe_issubclass
 
 class MyEnum(enum.Enum):
     name_one = "Value_One"
+    name_two = "Value_Two"
 
 
 def test_enum_field_by_value():

@@ -16,9 +16,9 @@ from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from aiohttp_rest_framework.types import SASerializerFieldMapping
 from aiohttp_rest_framework.utils import ClassLookupDict, safe_issubclass
 
-__all__ = ["Enum", "UUID", "Interval", "patch_marshmallow_fields"] + ma_fields_all
+__all__ = ["Enum", "UUID", "Interval"] + ma_fields_all
 
-# A flag to mark that marshamallow's fields were patched by aiohttp-rest-framework
+# A flag to mark that marshamallow fields were patched by aiohttp-rest-framework
 # i.e. `read_only` and `write_only` were mapped to `dump_only` and `load_only`,
 # `required` set to True by default (initially it's False, but should be True like in drf)
 _MA_FIELDS_PATCHED = False
@@ -26,7 +26,7 @@ _MA_FIELDS_PATCHED = False
 
 def patch_marshmallow_fields():
     """
-    Make all marshmallow's fields required by default
+    Patch marshmallow fields to look more like drf fields
     """
     global _MA_FIELDS_PATCHED
     if _MA_FIELDS_PATCHED:
@@ -34,8 +34,8 @@ def patch_marshmallow_fields():
     ma_fields = {key: value
                  for key, value in globals().items()
                  if safe_issubclass(value, ma.fields.FieldABC)}
-    for key, value in ma_fields.items():
-        class patched(value):
+    for field_name, field_cls in ma_fields.items():
+        cls_code = f"""class {field_cls.__name__}(field_cls):
             _rf_patched = True
 
             def __init__(self, *args, **kwargs):
@@ -43,10 +43,10 @@ def patch_marshmallow_fields():
                 kwargs.setdefault("dump_only", kwargs.pop("read_only", False))
                 kwargs.setdefault("load_only", kwargs.pop("write_only", False))
                 super(self.__class__, self).__init__(*args, **kwargs)
-
-        mro = inspect.getmro(patched)[1:]  # remove `patched` class from mro
-        patched = type(key, mro, dict(vars(patched)))
-        ma_fields[key] = patched
+        """
+        exec(cls_code, globals(), locals())
+        # keep the name of original field
+        ma_fields[field_name] = locals()[field_cls.__name__]
 
     globals().update(**ma_fields)
 
@@ -251,18 +251,9 @@ class AioPGSAFieldBuilder(FieldBuilderABC):
 
     def _set_field_specific_kwargs(self, kwargs: dict, field_cls: typing.Type[ma.fields.Field],
                                    column: sa.Column):
-        if issubclass(field_cls,
-                      Enum):  # for `Enum` we have to point which enum class is being used
-            if len(column.type.enums) > 1:
-                # @todo: implement support
-                msg = (
-                    "aiohttp-rest-framework does not support postgres `Enum` field "
-                    "with multiple enum classes"
-                )
-                raise ValueError(msg)
-            enum_name = column.type.enums[0]
-            enum = column.type.enum_class[enum_name]
-            kwargs["enum"] = enum.__class__
+        # for `Enum` we have to point which enum class is being used
+        if issubclass(field_cls, Enum):
+            kwargs["enum"] = column.type.enum_class
 
         if issubclass(field_cls, UUID):
             kwargs["as_uuid"] = column.type.as_uuid
