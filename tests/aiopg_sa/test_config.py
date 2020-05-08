@@ -14,11 +14,9 @@ def teardown_module():
 
 async def test_config_app_connection_property(aiohttp_client):
     apc = "engine"
-    rest_config = {
-        "app_connection_property": apc,
-    }
+    rest_config = {"app_connection_property": apc}
     app = get_app(rest_config)
     await aiohttp_client(app)  # instantiate here client so `on_startup` signal fires
     cfg = app[APP_CONFIG_KEY]
     assert cfg.app_connection_property == apc, "connection property wasn't applied in settings"
-    assert cfg.get_connection()
+    assert await cfg.get_connection()

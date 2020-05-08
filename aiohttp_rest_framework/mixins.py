@@ -67,4 +67,5 @@ class DestroyModelMixin:
         return web.HTTPNoContent()
 
     async def perform_destroy(self, instance):
-        await self.db_service.delete(instance)
+        db_service = await self.get_db_service()
+        await db_service.delete(instance)

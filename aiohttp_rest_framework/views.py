@@ -45,12 +45,9 @@ class GenericAPIView(CorsViewMixin, web.View):
         }
         self.detail = lookup_field_value is not None
 
-    @property
-    def db_service(self):
-        if not self._db_service:
-            self._db_service = \
-                self.rest_config.db_service_class(self.rest_config.get_connection(), self.model)
-        return self._db_service
+    async def get_db_service(self) -> DatabaseServiceABC:
+        connection = await self.rest_config.get_connection()
+        return self.rest_config.db_service_class(connection, self.model)
 
     @property
     def model(self):
@@ -90,14 +87,16 @@ class GenericAPIView(CorsViewMixin, web.View):
     async def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         where = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
+        db_service = await self.get_db_service()
         try:
-            obj = await self.db_service.get(**where)
+            obj = await db_service.get(**where)
         except ObjectNotFound:
             raise HTTPNotFound()
         return obj
 
     async def get_list(self):
-        return await self.db_service.all()
+        db_service = await self.get_db_service()
+        return await db_service.all()
 
 
 class CreateAPIView(CreateModelMixin,

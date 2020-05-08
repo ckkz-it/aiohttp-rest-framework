@@ -18,21 +18,11 @@ def test_default_config_setup():
     assert cfg._schema_type == AIOPG_SA
 
 
-def test_wrong_get_connection_config_setup():
-    rest_config = {
-        "get_connection": "not callable",
-    }
-    with pytest.raises(AssertionError, match="`get_connection` has to be callable"):
+@pytest.mark.parametrize("get_connection", ("wrong_get_conn", lambda: "some connection"))
+def test_wrong_get_connection_config_setup(get_connection):
+    rest_config = {"get_connection": get_connection}
+    with pytest.raises(AssertionError, match="`get_connection` has to be async callable"):
         get_base_app(rest_config)
-
-
-def test_config_setup_with_custom_get_connection():
-    get_conn = lambda: "some connection"
-    rest_config = {"get_connection": get_conn}
-    app = get_base_app(rest_config)
-    cfg = app[APP_CONFIG_KEY]
-    assert cfg.get_connection is get_conn, "wrong custom `get_connection` applied to settings"
-    assert cfg.get_connection() == get_conn()
 
 
 async def test_config_setup_with_async_get_connection():

@@ -1,4 +1,3 @@
-import asyncio
 import copy
 import typing
 from itertools import chain
@@ -265,10 +264,7 @@ class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
         return await db_service.create(**validated_data)
 
     async def get_db_service(self) -> DatabaseServiceABC:
-        if asyncio.iscoroutinefunction(self.config.get_connection):
-            connection = await self.config.get_connection()
-        else:
-            connection = self.config.get_connection()
+        connection = await self.config.get_connection()
         return self.config.db_service_class(connection, self.opts.model)
 
     class Meta:

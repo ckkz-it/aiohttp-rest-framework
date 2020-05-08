@@ -1,3 +1,4 @@
+import asyncio
 import re
 import typing
 
@@ -35,7 +36,7 @@ class Config:
             app: web.Application,
             *,
             app_connection_property: str = DEFAULT_APP_CONN_PROP,
-            get_connection: typing.Callable = None,
+            get_connection: typing.Callable[[], typing.Awaitable] = None,
             db_service: typing.Type[DatabaseServiceABC] = None,
             schema_type: str = AIOPG_SA,
     ):
@@ -53,11 +54,13 @@ class Config:
         self._schema_type = schema_type
         self._db_orm_mapping = db_orm_mappings[schema_type]
 
-        def _get_connection():
+        async def _get_connection():
             return app[app_connection_property]
 
         self.get_connection = get_connection or _get_connection
-        assert callable(self.get_connection), "`get_connection` has to be callable"
+        assert callable(self.get_connection) and asyncio.iscoroutinefunction(self.get_connection), (
+            "`get_connection` has to be async callable"
+        )
 
         self.db_service_class = db_service or self._db_orm_mapping["service"]
         self.field_builder = self._db_orm_mapping["field_builder"]
