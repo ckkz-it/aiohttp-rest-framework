@@ -6,8 +6,25 @@ from aiohttp_cors import CorsViewMixin
 from aiohttp_rest_framework import APP_CONFIG_KEY
 from aiohttp_rest_framework.db import DatabaseServiceABC
 from aiohttp_rest_framework.exceptions import HTTPNotFound, ObjectNotFound
+from aiohttp_rest_framework.mixins import (
+    CreateModelMixin, ListModelMixin, RetrieveModelMixin,
+    DestroyModelMixin, UpdateModelMixin,
+)
 from aiohttp_rest_framework.serializers import Serializer
 from aiohttp_rest_framework.settings import Config
+
+__all__ = (
+    "GenericAPIView",
+    "CreateAPIView",
+    "ListAPIView",
+    "RetrieveAPIView",
+    "DestroyAPIView",
+    "UpdateAPIView",
+    "ListCreateAPIView",
+    "RetrieveUpdateAPIView",
+    "RetrieveDestroyAPIView",
+    "RetrieveUpdateDestroyAPIView",
+)
 
 
 class GenericAPIView(CorsViewMixin, web.View):
@@ -81,65 +98,6 @@ class GenericAPIView(CorsViewMixin, web.View):
 
     async def get_list(self):
         return await self.db_service.all()
-
-
-class CreateModelMixin:
-    async def create(self):
-        data = await self.request.text()
-        serializer = self.get_serializer(data=data, as_text=True)
-        serializer.is_valid(raise_exception=True)
-
-        await self.perform_create(serializer)
-        return web.json_response(serializer.data, status=201)
-
-    async def perform_create(self, serializer: Serializer):
-        return await serializer.save()
-
-
-class ListModelMixin:
-    async def list(self):
-        instances = await self.get_list()
-        serializer = self.get_serializer(instances, many=True)
-        return web.json_response(serializer.data)
-
-
-class RetrieveModelMixin:
-    async def retrieve(self):
-        instance = await self.get_object()
-        serializer = self.get_serializer(instance)
-        return web.json_response(serializer.data)
-
-
-class UpdateModelMixin:
-    async def update(self):
-        instance = await self.get_object()
-
-        data = await self.request.text()
-        partial = self.kwargs.pop("partial", False)
-        serializer = self.get_serializer(instance, data=data, as_text=True,
-                                         partial=partial)
-        serializer.is_valid(raise_exception=True)
-
-        await self.perform_update(serializer)
-
-        return web.json_response(serializer.data)
-
-    def partial_update(self):
-        self.kwargs["partial"] = True
-        return self.update()
-
-    async def perform_update(self, serializer: Serializer):
-        return await serializer.save()
-
-
-class DestroyModelMixin:
-    async def destroy(self):
-        instance = await self.get_object()
-        await self.perform_destroy(instance)
-        return web.HTTPNoContent()
-
-    async def perform_destroy(self, instance):
-        await self.db_service.delete(instance)
 
 
 class CreateAPIView(CreateModelMixin,
