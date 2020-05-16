@@ -1,2 +1,7 @@
 [run]
 source = aiohttp_rest_framework
+
+[report]
+exclude_lines =
+    pass
+    raise NotImplementedError
