@@ -160,9 +160,13 @@ class Serializer(ma.Schema):
             "passed when instantiating the serializer instance."
         )
 
+        initial_data = self.get_initial()
+        if not initial_data:
+            raise ValidationError({"error": "No data provided"})
+
         if not hasattr(self, "_validated_data"):
             try:
-                self._validated_data = self.to_internal_value(self.get_initial())
+                self._validated_data = self.to_internal_value(initial_data)
             except ma.ValidationError as exc:
                 self._validated_data = {}
                 self._errors = exc.messages

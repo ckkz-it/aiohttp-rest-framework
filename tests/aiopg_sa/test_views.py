@@ -118,28 +118,3 @@ async def test_destroy_view(client: TestClient, user: RowProxy, get_user_by_id):
 async def test_destroy_non_existent_user(client: TestClient):
     response = await client.delete("/users/123")
     assert response.status == 404, "invalid response"
-
-
-@pytest.mark.with_client
-async def test_fields_all_for_serializer(user: RowProxy, test_user_data):
-    class UserWithFieldsALLSerializer(ModelSerializer):
-        company_id = fields.Str(required=False)
-
-        class Meta:
-            model = models.users
-            fields = "__all__"
-
-    serializer = UserWithFieldsALLSerializer(user)
-    for field_name in serializer.data:
-        assert field_name in models.users.columns, (
-            f"unknown serialized field '{field_name}' for users model"
-        )
-
-    serializer = UserWithFieldsALLSerializer(data=test_user_data)
-    serializer.is_valid(raise_exception=True)
-    assert serializer.validated_data
-    await serializer.save()
-    for field_name in serializer.data:
-        assert field_name in models.users.columns, (
-            f"unknown serialized field '{field_name}' for users model"
-        )
