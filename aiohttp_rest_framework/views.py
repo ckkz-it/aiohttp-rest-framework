@@ -7,8 +7,11 @@ from aiohttp_rest_framework import APP_CONFIG_KEY
 from aiohttp_rest_framework.db import DatabaseServiceABC
 from aiohttp_rest_framework.exceptions import HTTPNotFound, ObjectNotFound
 from aiohttp_rest_framework.mixins import (
-    CreateModelMixin, ListModelMixin, RetrieveModelMixin,
-    DestroyModelMixin, UpdateModelMixin,
+    CreateModelMixin,
+    DestroyModelMixin,
+    ListModelMixin,
+    RetrieveModelMixin,
+    UpdateModelMixin,
 )
 from aiohttp_rest_framework.serializers import Serializer
 from aiohttp_rest_framework.settings import Config

@@ -9,7 +9,13 @@ from aiohttp_rest_framework import fields
 from aiohttp_rest_framework.exceptions import ValidationError
 from aiohttp_rest_framework.serializers import ModelSerializer
 from tests import models
-from tests.aiopg_sa.utils import create_pg_db, drop_pg_db, create_tables, create_data_fixtures, drop_tables
+from tests.aiopg_sa.utils import (
+    create_data_fixtures,
+    create_pg_db,
+    create_tables,
+    drop_pg_db,
+    drop_tables,
+)
 from tests.config import db
 from tests.serializers import UserSerializer
 

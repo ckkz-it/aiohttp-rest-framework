@@ -5,7 +5,11 @@ import pytest
 from aiopg.sa.result import RowProxy
 
 from aiohttp_rest_framework.db import AioPGSAService
-from aiohttp_rest_framework.exceptions import MultipleObjectsReturned, ObjectNotFound
+from aiohttp_rest_framework.exceptions import (
+    FieldValidationError,
+    MultipleObjectsReturned,
+    ObjectNotFound,
+)
 from tests import models
 from tests.aiopg_sa.utils import (
     create_data_fixtures,
@@ -100,8 +104,14 @@ async def test_db_object_not_found(get_db_service):
 
 async def test_pass_invalid_uuid(get_db_service, user: RowProxy):
     service: AioPGSAService = await get_db_service(models.users)
-    with pytest.raises(ObjectNotFound):
+    with pytest.raises(FieldValidationError):
         await service.update(user, company_id="non existent")
+
+
+async def test_pass_invalid_enum(get_db_service, aiopg_sa_instance: RowProxy):
+    service: AioPGSAService = await get_db_service(models.aiopg_sa_fields)
+    with pytest.raises(FieldValidationError):
+        await service.update(aiopg_sa_instance, Enum="not enum")
 
 
 async def test_foreign_key_object_not_found(get_db_service, user: RowProxy):

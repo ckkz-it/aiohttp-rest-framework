@@ -7,6 +7,7 @@ __all__ = [
     "DatabaseException",
     "ObjectNotFound",
     "MultipleObjectsReturned",
+    "FieldValidationError",
     "ValidationError",
     "HTTPNotFound",
 ]
@@ -37,6 +38,13 @@ class MultipleObjectsReturned(DatabaseException):
     """Database service returned more than one object on `get` method call"""
 
     def __init__(self, message: str = "Multiple objects returned"):
+        super().__init__(message)
+
+
+class FieldValidationError(DatabaseException):
+    """Database service returned more than one object on `get` method call"""
+
+    def __init__(self, message: str = "Invalid field value"):
         super().__init__(message)
 
 
