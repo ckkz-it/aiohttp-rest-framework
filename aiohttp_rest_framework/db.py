@@ -6,7 +6,7 @@ from aiopg.sa.result import ResultProxy, RowProxy
 from sqlalchemy import Table, and_
 
 from aiohttp_rest_framework import types
-from aiohttp_rest_framework.exceptions import MultipleObjectsReturned, ObjectNotFound
+from aiohttp_rest_framework.exceptions import MultipleObjectsReturned, ObjectNotFound, DatabaseException
 
 __all__ = ["DatabaseServiceABC", "AioPGSAService"]
 
@@ -90,13 +90,16 @@ class AioPGSAService(DatabaseServiceABC):
         return await self.execute(query)
 
     async def execute(
-            self,
-            query: typing.Any,
-            *,
-            fetch: typing.Optional[types.Fetch] = None,
+        self,
+        query: typing.Any,
+        *,
+        fetch: typing.Optional[types.Fetch] = None,
     ) -> types.ExecuteResultAioPgSA:
         async with self.connection.acquire() as conn:
-            result: ResultProxy = await conn.execute(query)
+            try:
+                result: ResultProxy = await conn.execute(query)
+            except Exception as exc:
+                raise self._get_exception(exc)
             if fetch is not None:
                 if fetch == "all":
                     return await result.fetchall()
@@ -117,3 +120,11 @@ class AioPGSAService(DatabaseServiceABC):
         if where:
             return and_(self.model.columns[key] == value for key, value in where.items())
         return None
+
+    def _get_exception(self, exc: Exception) -> DatabaseException:
+        # NOTE(ckkz-it): For psycopg2 C extension errors check by name
+        if exc.__class__.__name__ == "InvalidTextRepresentation":
+            return ObjectNotFound()
+        if exc.__class__.__name__ == "ForeignKeyViolation" and "is not present in table" in exc.args[0]:
+            return ObjectNotFound()
+        return DatabaseException()

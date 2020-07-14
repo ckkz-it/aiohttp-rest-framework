@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 
 import pytest
 from aiopg.sa.result import RowProxy
@@ -95,3 +96,15 @@ async def test_db_object_not_found(get_db_service):
     service: AioPGSAService = await get_db_service(models.users)
     with pytest.raises(ObjectNotFound):
         await service.get(id=123)
+
+
+async def test_pass_invalid_uuid(get_db_service, user: RowProxy):
+    service: AioPGSAService = await get_db_service(models.users)
+    with pytest.raises(ObjectNotFound):
+        await service.update(user, company_id="non existent")
+
+
+async def test_foreign_key_object_not_found(get_db_service, user: RowProxy):
+    service: AioPGSAService = await get_db_service(models.users)
+    with pytest.raises(ObjectNotFound):
+        await service.update(user, company_id=str(uuid.uuid4()))

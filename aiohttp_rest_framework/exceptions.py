@@ -4,6 +4,7 @@ from aiohttp import hdrs, web
 
 __all__ = [
     "AioRestException",
+    "DatabaseException",
     "ObjectNotFound",
     "MultipleObjectsReturned",
     "ValidationError",
@@ -14,17 +15,29 @@ __all__ = [
 class AioRestException(Exception):
     """Base class for aiohttp-rest-framework errors"""
 
+    def __init__(self, message: str = "Unhandled rest-framework exception"):
+        self.message = message
+
 
 class DatabaseException(AioRestException):
     """All database related exceptions"""
+
+    def __init__(self, message: str = "Database exception"):
+        super().__init__(message)
 
 
 class ObjectNotFound(DatabaseException):
     """Database service returned 0 object on `get` method call"""
 
+    def __init__(self, message: str = "Object not found"):
+        super().__init__(message)
+
 
 class MultipleObjectsReturned(DatabaseException):
     """Database service returned more than one object on `get` method call"""
+
+    def __init__(self, message: str = "Multiple objects returned"):
+        super().__init__(message)
 
 
 class ValidationError(web.HTTPBadRequest):
