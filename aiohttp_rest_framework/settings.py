@@ -10,6 +10,7 @@ from aiohttp_rest_framework.types import DbOrmMapping
 from aiohttp_rest_framework.utils import get_model_fields_sa
 
 __all__ = (
+    "AIOPG_SA",
     "Config",
     "get_global_config",
     "set_global_config",
@@ -32,13 +33,13 @@ CONNECTION_PROP_RE = re.compile(r"^[^-\s]+$")
 
 class Config:
     def __init__(
-            self,
-            app: web.Application,
-            *,
-            app_connection_property: str = DEFAULT_APP_CONN_PROP,
-            get_connection: typing.Callable[[], typing.Awaitable] = None,
-            db_service: typing.Type[DatabaseServiceABC] = None,
-            schema_type: str = AIOPG_SA,
+        self,
+        app: web.Application,
+        *,
+        app_connection_property: str = DEFAULT_APP_CONN_PROP,
+        get_connection: typing.Callable[[], typing.Awaitable] = None,
+        db_service: typing.Type[DatabaseServiceABC] = None,
+        schema_type: str = AIOPG_SA,
     ):
         assert isinstance(app_connection_property, str), (
             "`app_connection_property` has to be a string"
@@ -51,7 +52,7 @@ class Config:
         assert schema_type in SCHEMA_TYPES, (
             f"`schema_type` has to be one of {', '.join(SCHEMA_TYPES)}"
         )
-        self._schema_type = schema_type
+        self.schema_type = schema_type
         self._db_orm_mapping = db_orm_mappings[schema_type]
 
         async def _get_connection():

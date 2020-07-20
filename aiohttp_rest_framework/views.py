@@ -4,7 +4,7 @@ from aiohttp import web
 from aiohttp_cors import CorsViewMixin
 
 from aiohttp_rest_framework import APP_CONFIG_KEY
-from aiohttp_rest_framework.db import DatabaseServiceABC
+from aiohttp_rest_framework.db import DatabaseServiceABC, op
 from aiohttp_rest_framework.exceptions import HTTPNotFound, ObjectNotFound
 from aiohttp_rest_framework.mixins import (
     CreateModelMixin,

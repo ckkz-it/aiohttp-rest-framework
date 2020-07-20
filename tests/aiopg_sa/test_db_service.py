@@ -4,7 +4,7 @@ import uuid
 import pytest
 from aiopg.sa.result import RowProxy
 
-from aiohttp_rest_framework.db import AioPGSAService
+from aiohttp_rest_framework.db import AioPGSAService, op
 from aiohttp_rest_framework.exceptions import (
     FieldValidationError,
     MultipleObjectsReturned,
@@ -52,7 +52,7 @@ async def get_db_service():
 
 async def test_db_get(get_db_service, user: RowProxy):
     service: AioPGSAService = await get_db_service(models.users)
-    user_from_db = await service.get(id=user.id)
+    user_from_db = await service.get(op.literal_column("id") == user.id)
     assert user_from_db is not None
     assert user_from_db.id == user.id
 
@@ -65,10 +65,12 @@ async def test_db_all(get_db_service):
     assert len(users_from_db) > 1
 
 
-async def test_db_filter(get_db_service, user: RowProxy):
+async def test_db_filter_with_operator(get_db_service, user: RowProxy):
     service: AioPGSAService = await get_db_service(models.users)
-    users_from_db = await service.filter(id=user.id)
+    where = op.literal_column("id") == op.param("id")
+    users_from_db = await service.filter(where, params={"id": user.id})
     assert isinstance(users_from_db, list)
+    assert users_from_db[0].id == user.id
 
 
 @pytest.mark.run_loop
@@ -85,6 +87,15 @@ async def test_db_update(get_db_service, user: RowProxy):
     user_from_db = await service.update(user, name=new_name)
     assert user_from_db is not None
     assert new_name == user_from_db["name"]
+
+
+async def test_db_complex_query(get_db_service, user: RowProxy):
+    service: AioPGSAService = await get_db_service(models.users)
+    where = op.and_(user.id == op.literal_column("id"), user.phone == op.literal_column("phone"))
+    user_from_db = await service.get(where)
+    assert user_from_db is not None
+    assert user.id == user_from_db.id
+    assert user.phone == user_from_db.phone
 
 
 @pytest.mark.run_loop

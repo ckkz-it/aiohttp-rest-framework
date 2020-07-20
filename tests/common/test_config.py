@@ -15,7 +15,7 @@ def test_default_config_setup():
     assert hasattr(cfg, "db_service_class"), "config doesn't have `db_service_class` attribute"
     assert hasattr(cfg, "_db_orm_mapping")
     assert cfg.app_connection_property == DEFAULT_APP_CONN_PROP
-    assert cfg._schema_type == AIOPG_SA
+    assert cfg.schema_type == AIOPG_SA
 
 
 @pytest.mark.parametrize("get_connection", ("wrong_get_conn", lambda: "some connection"))

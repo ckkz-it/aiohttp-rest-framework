@@ -1,10 +1,22 @@
 import abc
-import typing
+from typing import Any, List, Optional, Union
 
 from aiopg.sa import Engine
 from aiopg.sa.result import ResultProxy, RowProxy
 from psycopg2 import Error as PsycopgError
-from sqlalchemy import Table, and_
+from sqlalchemy import (
+    Table,
+    and_,
+    bindparam,
+    delete,
+    insert,
+    literal_column,
+    not_,
+    or_,
+    select,
+    update,
+)
+from sqlalchemy.sql.elements import BindParameter, BooleanClauseList, ColumnClause, literal
 
 from aiohttp_rest_framework import types
 from aiohttp_rest_framework.exceptions import (
@@ -15,7 +27,7 @@ from aiohttp_rest_framework.exceptions import (
     UniqueViolationError,
 )
 
-__all__ = ["DatabaseServiceABC", "AioPGSAService"]
+__all__ = ["DatabaseServiceABC", "AioPGSAService", "operation", "op"]
 
 
 class DatabaseServiceABC(metaclass=abc.ABCMeta):
@@ -58,12 +70,18 @@ class AioPGSAService(DatabaseServiceABC):
         self.connection = connection
         self.model = model
 
-    async def get(self, **where) -> typing.Optional[RowProxy]:
-        where = self._construct_whereclause(where)
-        query = self.model.select(where)
+    async def get(
+        self,
+        whereclause: Optional[BooleanClauseList] = None,
+        params=None,
+        **inline_kwargs
+    ) -> Optional[RowProxy]:
+        if whereclause is None:
+            whereclause = self._construct_whereclause(inline_kwargs)
+        query = select([self.model], whereclause)
         try:
-            objs = await self.execute(query, fetch="all")
-        except FieldValidationError:
+            objs = await self.execute(query, fetch="all", params=params)
+        except DatabaseException:
             raise ObjectNotFound()
         if len(objs) > 1:
             raise MultipleObjectsReturned()
@@ -71,47 +89,84 @@ class AioPGSAService(DatabaseServiceABC):
             raise ObjectNotFound()
         return objs[0]
 
-    async def all(self) -> typing.List[RowProxy]:
-        query = self.model.select()
+    async def all(self) -> List[RowProxy]:
+        query = select([self.model])
         return await self.execute(query, fetch="all")
 
-    async def filter(self, **where) -> typing.List[RowProxy]:
-        where = self._construct_whereclause(where)
-        query = self.model.select(where)
-        return await self.execute(query, fetch="all")
+    async def filter(
+        self,
+        whereclause: Optional[BooleanClauseList] = None,
+        params=None,
+        **inline_kwargs
+    ) -> List[RowProxy]:
+        if whereclause is None:
+            whereclause = self._construct_whereclause(inline_kwargs)
+        query = select([self.model], whereclause)
+        return await self.execute(query, params=params, fetch="all")
 
     async def create(self, **data) -> RowProxy:
-        query = self.model.insert().values(**data).returning(*self.model.columns)
+        query = insert(self.model, data).returning(literal_column("*"))
         return await self.execute(query, fetch="one")
 
-    async def update(self, instance: RowProxy, **data) -> RowProxy:
-        pk = self._get_pk()
-        where = self.model.columns[pk] == instance[pk]
-        query = self.model.update(where).values(**data).returning(*self.model.columns)
-        return await self.execute(query, fetch="one")
+    async def update(
+        self,
+        instance: RowProxy,
+        whereclause: Optional[BooleanClauseList] = None,
+        params: Optional[dict] = None,
+        **data,
+    ) -> RowProxy:
+        if whereclause is None:
+            pk = self._get_pk()
+            whereclause = self.model.columns[pk] == instance[pk]
+        query = update(self.model, whereclause, data).returning(literal_column("*"))
+        return await self.execute(query, params=params, fetch="one")
 
-    async def delete(self, instance: RowProxy) -> ResultProxy:
-        pk = self._get_pk()
-        where = self.model.columns[pk] == instance[pk]
-        query = self.model.delete(where)
-        return await self.execute(query)
+    async def delete(
+        self,
+        instance: RowProxy,
+        whereclause: Optional[BooleanClauseList] = None,
+        params=None
+    ) -> ResultProxy:
+        if whereclause is None:
+            pk = self._get_pk()
+            whereclause = self.model.columns[pk] == instance[pk]
+        query = delete(self.model, whereclause)
+        return await self.execute(query, params=params)
 
     async def execute(
         self,
-        query: typing.Any,
-        *,
-        fetch: typing.Optional[types.Fetch] = None,
+        query: Any,
+        params: Any = None,
+        fetch: Optional[types.Fetch] = None,
     ) -> types.ExecuteResultAioPgSA:
-        try:
-            async with self.connection.acquire() as conn:
-                result: ResultProxy = await conn.execute(query)
-                if fetch is not None:
-                    if fetch == "all":
-                        return await result.fetchall()
-                    return await result.fetchone()
-                return result
-        except PsycopgError as exc:
-            raise self._get_exception(exc)
+        if fetch is None:
+            return await self._execute(query, params or {})
+        if fetch == "all":
+            return await self._fetchall(query, params or {})
+        return await self._fetchone(query, params or {})
+
+    async def _fetchone(self, query: str, params: dict) -> Optional[RowProxy]:
+        async with self.connection.acquire() as conn:
+            try:
+                result: ResultProxy = await conn.execute(query, **params)
+                return await result.fetchone()
+            except PsycopgError as exc:
+                raise self._get_exception(exc)
+
+    async def _fetchall(self, query: str, params: dict) -> List[RowProxy]:
+        async with self.connection.acquire() as conn:
+            try:
+                result: ResultProxy = await conn.execute(query, params)
+                return await result.fetchall()
+            except PsycopgError as exc:
+                raise self._get_exception(exc)
+
+    async def _execute(self, query: str, params: dict) -> ResultProxy:
+        async with self.connection.acquire() as conn:
+            try:
+                return await conn.execute(query, params)
+            except PsycopgError as exc:
+                raise self._get_exception(exc)
 
     def _get_pk(self) -> str:
         """
@@ -130,10 +185,52 @@ class AioPGSAService(DatabaseServiceABC):
 
     def _get_exception(self, exc: PsycopgError) -> DatabaseException:
         # NOTE(ckkz-it): https://www.postgresql.org/docs/current/errcodes-appendix.html#ERRCODES-TABLE
-        if exc.pgcode == "22P02":
+        if exc.pgcode in ("22P02", "42883"):
             return FieldValidationError(exc.pgerror)
         if exc.pgcode == "23503":
             return ObjectNotFound(exc.pgerror)
         if exc.pgcode == "23505":
             return UniqueViolationError(exc.pgerror)
         return DatabaseException(exc.pgerror)
+
+
+class _operation:  # noqa
+    @property
+    def _is_aio_pg_sa(self):
+        from aiohttp_rest_framework.settings import get_global_config, AIOPG_SA
+        config = get_global_config()
+        return config.schema_type == AIOPG_SA
+
+    def param(self, parameter: str) -> Union[BindParameter]:
+        if self._is_aio_pg_sa:
+            return bindparam(parameter)
+        raise NotImplementedError()
+
+    def literal(self, value: str) -> Union[BindParameter]:
+        if self._is_aio_pg_sa:
+            return literal(value)
+        raise NotImplementedError()
+
+    def literal_column(self, column: str) -> Union[ColumnClause]:
+        if self._is_aio_pg_sa:
+            return literal_column(column)
+        raise NotImplementedError()
+
+    def and_(self, *expressions: Any) -> Union[BooleanClauseList]:
+        if self._is_aio_pg_sa:
+            return and_(*expressions)
+        raise NotImplementedError()
+
+    def or_(self, *expressions: Any) -> Union[BooleanClauseList]:
+        if self._is_aio_pg_sa:
+            return or_(*expressions)
+        raise NotImplementedError()
+
+    def not_(self, expression: Any) -> Union[BooleanClauseList]:
+        if self._is_aio_pg_sa:
+            return not_(expression)
+        raise NotImplementedError()
+
+
+operation = _operation()
+op = operation
