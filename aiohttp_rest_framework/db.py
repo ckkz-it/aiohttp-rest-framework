@@ -3,6 +3,7 @@ import typing
 
 from aiopg.sa import Engine
 from aiopg.sa.result import ResultProxy, RowProxy
+from psycopg2 import Error as PsycopgError
 from sqlalchemy import Table, and_
 
 from aiohttp_rest_framework import types
@@ -11,6 +12,7 @@ from aiohttp_rest_framework.exceptions import (
     FieldValidationError,
     MultipleObjectsReturned,
     ObjectNotFound,
+    UniqueViolationError,
 )
 
 __all__ = ["DatabaseServiceABC", "AioPGSAService"]
@@ -61,9 +63,7 @@ class AioPGSAService(DatabaseServiceABC):
         query = self.model.select(where)
         try:
             objs = await self.execute(query, fetch="all")
-        except Exception:
-            # TODO(ckkz-it): Get psycopg2 exception first, then check what
-            # exception should raise
+        except FieldValidationError:
             raise ObjectNotFound()
         if len(objs) > 1:
             raise MultipleObjectsReturned()
@@ -82,28 +82,19 @@ class AioPGSAService(DatabaseServiceABC):
 
     async def create(self, **data) -> RowProxy:
         query = self.model.insert().values(**data).returning(*self.model.columns)
-        try:
-            return await self.execute(query, fetch="one")
-        except Exception as exc:
-            raise self._get_exception(exc)
+        return await self.execute(query, fetch="one")
 
     async def update(self, instance: RowProxy, **data) -> RowProxy:
         pk = self._get_pk()
         where = self.model.columns[pk] == instance[pk]
         query = self.model.update(where).values(**data).returning(*self.model.columns)
-        try:
-            return await self.execute(query, fetch="one")
-        except Exception as exc:
-            raise self._get_exception(exc)
+        return await self.execute(query, fetch="one")
 
     async def delete(self, instance: RowProxy) -> ResultProxy:
         pk = self._get_pk()
         where = self.model.columns[pk] == instance[pk]
         query = self.model.delete(where)
-        try:
-            return await self.execute(query)
-        except Exception:
-            raise ObjectNotFound()
+        return await self.execute(query)
 
     async def execute(
         self,
@@ -111,13 +102,16 @@ class AioPGSAService(DatabaseServiceABC):
         *,
         fetch: typing.Optional[types.Fetch] = None,
     ) -> types.ExecuteResultAioPgSA:
-        async with self.connection.acquire() as conn:
-            result: ResultProxy = await conn.execute(query)
-            if fetch is not None:
-                if fetch == "all":
-                    return await result.fetchall()
-                return await result.fetchone()
-            return result
+        try:
+            async with self.connection.acquire() as conn:
+                result: ResultProxy = await conn.execute(query)
+                if fetch is not None:
+                    if fetch == "all":
+                        return await result.fetchall()
+                    return await result.fetchone()
+                return result
+        except PsycopgError as exc:
+            raise self._get_exception(exc)
 
     def _get_pk(self) -> str:
         """
@@ -134,10 +128,12 @@ class AioPGSAService(DatabaseServiceABC):
             return and_(self.model.columns[key] == value for key, value in where.items())
         return None
 
-    def _get_exception(self, exc: Exception) -> DatabaseException:
-        # NOTE(ckkz-it): For psycopg2 C extension errors check by name
-        if exc.__class__.__name__ == "InvalidTextRepresentation":
-            return FieldValidationError()
-        if exc.__class__.__name__ == "ForeignKeyViolation" and "is not present in table" in exc.args[0]:
-            return ObjectNotFound()
-        return DatabaseException()
+    def _get_exception(self, exc: PsycopgError) -> DatabaseException:
+        # NOTE(ckkz-it): https://www.postgresql.org/docs/current/errcodes-appendix.html#ERRCODES-TABLE
+        if exc.pgcode == "22P02":
+            return FieldValidationError(exc.pgerror)
+        if exc.pgcode == "23503":
+            return ObjectNotFound(exc.pgerror)
+        if exc.pgcode == "23505":
+            return UniqueViolationError(exc.pgerror)
+        return DatabaseException(exc.pgerror)

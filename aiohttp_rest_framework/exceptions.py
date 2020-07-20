@@ -8,6 +8,7 @@ __all__ = [
     "ObjectNotFound",
     "MultipleObjectsReturned",
     "FieldValidationError",
+    "UniqueViolationError",
     "ValidationError",
     "HTTPNotFound",
 ]
@@ -42,9 +43,16 @@ class MultipleObjectsReturned(DatabaseException):
 
 
 class FieldValidationError(DatabaseException):
-    """Database service returned more than one object on `get` method call"""
+    """Invalid field value provided to the model's field"""
 
     def __init__(self, message: str = "Invalid field value"):
+        super().__init__(message)
+
+
+class UniqueViolationError(DatabaseException):
+    """Unique constraint violation"""
+
+    def __init__(self, message: str = "Unique violation error"):
         super().__init__(message)
 
 
