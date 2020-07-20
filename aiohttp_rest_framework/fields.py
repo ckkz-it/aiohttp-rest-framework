@@ -57,7 +57,6 @@ def patch_marshmallow_fields():
     _MA_FIELDS_PATCHED = True
 
 
-# @todo: add support for multiple enums
 class Enum(ma.fields.Field):
     default_error_messages = {
         "invalid_string": "Not a valid string.",
@@ -209,10 +208,10 @@ class FieldBuilderABC(metaclass=abc.ABCMeta):
 
 class AioPGSAFieldBuilder(FieldBuilderABC):
     def build(
-            self,
-            name: str,
-            serializer=None,
-            **kwargs
+        self,
+        name: str,
+        serializer=None,
+        **kwargs
     ):
         model: sa.Table = serializer.opts.model
         column: sa.Column = model.columns.get(name)
