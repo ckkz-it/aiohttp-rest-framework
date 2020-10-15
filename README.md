@@ -75,13 +75,26 @@ class UsersRetrieveUpdateDestroyView(views.RetrieveUpdateDestroyAPIView):
 Our simple app would look like this:
 
 ```python
+import aiopg.sa
 from aiohttp import web
 from aiohttp_rest_framework import setup_rest_framework
 
-from app import views
+from app import views, config
 
+# if you want to use other property than "db", you have to specify
+# `app_connection_property` in config, passing to `setup_rest_framework`
+# Example:
+#   >>> setup_rest_framework(app, {"app_connection_property": "my_custom_prop"})
+async def init_pg(app: web.Application) -> None:
+    app["db"] = await aiopg.sa.create_engine(config.db_url)
+
+async def close_pg(app: web.Application) -> None:
+    app["db"].close()
+    await app["db"].wait_closed()
 
 app = web.Application()
+app.on_startup.append(init_pg)
+app.on_cleanup.append(close_pg)
 app.router.add_view("/users", views.UsersListCreateView)
 app.router.add_view("/users/{id}", views.UsersRetrieveUpdateDestroyView)
 setup_rest_framework(app)
