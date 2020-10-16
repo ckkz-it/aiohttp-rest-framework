@@ -185,7 +185,7 @@ class AioPGSAService(DatabaseServiceABC):
 
     def _get_exception(self, exc: PsycopgError) -> DatabaseException:
         # NOTE(ckkz-it): https://www.postgresql.org/docs/current/errcodes-appendix.html#ERRCODES-TABLE
-        if exc.pgcode in ("22P02", "42883"):
+        if exc.pgcode in ("22P02", "42883", "23502"):
             return FieldValidationError(exc.pgerror)
         if exc.pgcode == "23503":
             return ObjectNotFound(exc.pgerror)
