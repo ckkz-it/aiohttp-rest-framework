@@ -88,6 +88,22 @@ async def test_update_view(client: TestClient, user: RowProxy, get_user_by_id):
     assert response_data["phone"] == user_data["phone"] == updated_user.phone
 
 
+async def test_create_with_null_value_that_must_not_be_null(client: TestClient, test_user_data):
+    test_user_data.pop("password")
+    response = await client.post("/users", json=test_user_data)
+    assert response.status == 400, "invalid response"
+    data = await response.json()
+    assert "password" in data["error"] and "null" in data["error"], "caught wrong error"
+
+
+async def test_invalid_json(client: TestClient):
+    user_data = '{"name": "My Name", "email": "test@email.com", "phone": "123",}'
+    response = await client.post("/users", data=user_data, headers={"Content-Type": "application/json"})
+    assert response.status == 400, "invalid response"
+    data = await response.json()
+    assert data["error"] == "invalid json"
+
+
 async def test_partial_update_view(client: TestClient, user: RowProxy, get_user_by_id):
     user_data = {
         "email": "updated@mail.com",

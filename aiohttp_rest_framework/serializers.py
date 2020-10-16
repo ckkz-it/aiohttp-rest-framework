@@ -1,11 +1,12 @@
 import copy
 import typing
 from itertools import chain
+from json import JSONDecodeError
 
 import marshmallow as ma
 
 from aiohttp_rest_framework.db import DatabaseServiceABC
-from aiohttp_rest_framework.exceptions import ValidationError
+from aiohttp_rest_framework.exceptions import ValidationError, DatabaseException
 from aiohttp_rest_framework.settings import Config, get_global_config
 
 __all__ = (
@@ -77,9 +78,12 @@ class Serializer(ma.Schema):
         super().__init__(**kwargs)
 
     def to_internal_value(self, data):
-        if self.as_text:
-            return self.loads(data)
-        return self.load(data)
+        try:
+            if self.as_text:
+                return self.loads(data)
+            return self.load(data)
+        except JSONDecodeError:
+            raise ValidationError({"error": "invalid json"})
 
     def to_representation(self, instance):
         return self.dump(instance)
@@ -261,11 +265,17 @@ class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
 
     async def update(self, instance: typing.Any, validated_data: typing.OrderedDict):
         db_service = await self.get_db_service()
-        return await db_service.update(instance, **validated_data)
+        try:
+            return await db_service.update(instance, **validated_data)
+        except DatabaseException as e:
+            raise ValidationError({"error": e.message})
 
     async def create(self, validated_data: typing.OrderedDict):
         db_service = await self.get_db_service()
-        return await db_service.create(**validated_data)
+        try:
+            return await db_service.create(**validated_data)
+        except DatabaseException as e:
+            raise ValidationError({"error": e.message})
 
     async def get_db_service(self) -> DatabaseServiceABC:
         connection = await self.config.get_connection()
