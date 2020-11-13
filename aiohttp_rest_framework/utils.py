@@ -2,10 +2,9 @@ import inspect
 from typing import Dict, Generic, Optional, Tuple, TypeVar
 
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import create_async_engine
-
 from databases import Database
 from sqlalchemy import MetaData
+from sqlalchemy.ext.asyncio import create_async_engine
 
 __all__ = (
     "ClassLookupDict",
