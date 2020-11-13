@@ -12,7 +12,7 @@ setup(
     license="MIT",
     author="Andrey Laguta",
     author_email="cirkus.kz@gmail.com",
-    py_modules=["aiohttp_rest_framework"],
+    py_modules=["aiohttp_rest_framework", "aiohttp_rest_framework/db"],
     description="Rest framework for aiohttp web server",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -24,7 +24,7 @@ setup(
         "aiohttp",
         "aiohttp-cors",
         "marshmallow",
-        "git+https://github.com/ckkz-it/databases.git@sqlalchemy-defaults#egg=databases[postgresql]",
+        "databases-extended[postgresql]==0.4.1",
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",
