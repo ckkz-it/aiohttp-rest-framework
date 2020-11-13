@@ -8,7 +8,7 @@ tests:
 
 .PHONY: build_package
 build_package:
-	@python setup.py sdist bdist_wheel --universal
+	@rm -rf build dist && python setup.py sdist bdist_wheel --universal
 
 .PHONY: deploy_package
 deploy_package:
