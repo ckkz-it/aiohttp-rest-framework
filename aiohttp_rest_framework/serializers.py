@@ -5,8 +5,7 @@ from json import JSONDecodeError
 
 import marshmallow as ma
 
-from aiohttp_rest_framework.db import DatabaseServiceABC
-from aiohttp_rest_framework.exceptions import ValidationError, DatabaseException
+from aiohttp_rest_framework.exceptions import DatabaseException, ValidationError
 from aiohttp_rest_framework.settings import Config, get_global_config
 
 __all__ = (
@@ -266,20 +265,20 @@ class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
     async def update(self, instance: typing.Any, validated_data: typing.OrderedDict):
         db_service = await self.get_db_service()
         try:
-            return await db_service.update(instance, **validated_data)
+            return await db_service.update(instance, validated_data)
         except DatabaseException as e:
             raise ValidationError({"error": e.message})
 
     async def create(self, validated_data: typing.OrderedDict):
         db_service = await self.get_db_service()
         try:
-            return await db_service.create(**validated_data)
+            return await db_service.create(validated_data)
         except DatabaseException as e:
             raise ValidationError({"error": e.message})
 
-    async def get_db_service(self) -> DatabaseServiceABC:
+    async def get_db_service(self):
         connection = await self.config.get_connection()
-        return self.config.db_service_class(connection, self.opts.model)
+        return self.config.db_service_class(self.opts.model, connection)
 
     class Meta:
         abstract = True

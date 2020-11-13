@@ -4,27 +4,28 @@ import typing
 
 from aiohttp import web
 
-from aiohttp_rest_framework.db import AioPGSAService, DatabaseServiceABC
-from aiohttp_rest_framework.fields import AioPGSAFieldBuilder
+from aiohttp_rest_framework.db.pg_sa import PGSAService
+from aiohttp_rest_framework.fields import SAFieldBuilder
 from aiohttp_rest_framework.types import DbOrmMapping
 from aiohttp_rest_framework.utils import get_model_fields_sa
 
 __all__ = (
-    "AIOPG_SA",
+    "PG_SA",
     "Config",
     "get_global_config",
     "set_global_config",
+    "DEFAULT_APP_CONN_PROP",
 )
 
-AIOPG_SA = "aiopg_sa"
-SCHEMA_TYPES = (AIOPG_SA,)
+PG_SA = "pg_sa"
+SCHEMA_TYPES = (PG_SA,)
 
 db_orm_mappings: DbOrmMapping = {
-    AIOPG_SA: {
-        "service": AioPGSAService,
-        "field_builder": AioPGSAFieldBuilder,
+    PG_SA: {
+        "service": PGSAService,
+        "field_builder": SAFieldBuilder,
         "model_fields_getter": get_model_fields_sa,
-    }
+    },
 }
 
 DEFAULT_APP_CONN_PROP = "db"
@@ -38,8 +39,8 @@ class Config:
         *,
         app_connection_property: str = DEFAULT_APP_CONN_PROP,
         get_connection: typing.Callable[[], typing.Awaitable] = None,
-        db_service: typing.Type[DatabaseServiceABC] = None,
-        schema_type: str = AIOPG_SA,
+        db_service=None,
+        schema_type: str = PG_SA,
     ):
         assert isinstance(app_connection_property, str), (
             "`app_connection_property` has to be a string"
@@ -72,6 +73,7 @@ _config: typing.Optional[Config] = None
 
 
 def get_global_config() -> Config:
+    assert _config is not None, "Looks like you didn't call `setup_rest_framework(app)`"
     return _config
 
 

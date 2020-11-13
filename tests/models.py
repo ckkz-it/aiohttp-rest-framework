@@ -14,7 +14,7 @@ def stringified_uuid():
 
 users = sa.Table(
     "users", meta,
-    sa.Column("id", UUID(as_uuid=True), primary_key=True, default=uuid4),
+    sa.Column("id", UUID, primary_key=True, default=uuid4),
     sa.Column("name", sa.Text, nullable=False, default=""),
     sa.Column("email", sa.Text, nullable=False, unique=True),
     sa.Column("phone", sa.Text, nullable=False, default=""),
@@ -25,26 +25,25 @@ users = sa.Table(
 
 companies = sa.Table(
     "companies", meta,
-    sa.Column("id", UUID(as_uuid=True), primary_key=True, default=uuid4),
+    sa.Column("id", UUID, primary_key=True, default=uuid4),
     sa.Column("name", sa.Text),
 )
 
 
-class AioPGSAEnum(enum.Enum):
+class TestSAEnum(enum.Enum):
     test = "test"
     test2 = "test2"
 
 
-aiopg_sa_fields = sa.Table(
-    "aiopg_sa_fields", meta,
-    sa.Column("UUID", UUID(as_uuid=True), primary_key=True, default=uuid4),
-
+pg_sa_fields = sa.Table(
+    "pg_sa_fields", meta,
+    sa.Column("UUID", UUID, primary_key=True, default=stringified_uuid),
     sa.Column("StringifiedUUID", UUID, default=stringified_uuid),
     sa.Column("BigInteger", sa.BigInteger, nullable=True),
     sa.Column("Boolean", sa.Boolean, server_default=sa.text("FALSE")),
     sa.Column("Date", sa.Date, nullable=True),
     sa.Column("DateTime", sa.DateTime, nullable=True),
-    sa.Column("Enum", sa.Enum(AioPGSAEnum), nullable=True),
+    sa.Column("Enum", sa.Enum(TestSAEnum), nullable=True),
     sa.Column("Float", sa.Float, nullable=True),
     sa.Column("Integer", sa.Integer, nullable=True),
     sa.Column("Interval", sa.Interval, nullable=True),

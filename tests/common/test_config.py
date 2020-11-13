@@ -3,7 +3,7 @@ import asyncio
 import pytest
 
 from aiohttp_rest_framework import APP_CONFIG_KEY
-from aiohttp_rest_framework.settings import AIOPG_SA, DEFAULT_APP_CONN_PROP
+from aiohttp_rest_framework.settings import DEFAULT_APP_CONN_PROP, PG_SA
 from tests.base_app import get_base_app
 
 
@@ -15,7 +15,7 @@ def test_default_config_setup():
     assert hasattr(cfg, "db_service_class"), "config doesn't have `db_service_class` attribute"
     assert hasattr(cfg, "_db_orm_mapping")
     assert cfg.app_connection_property == DEFAULT_APP_CONN_PROP
-    assert cfg.schema_type == AIOPG_SA
+    assert cfg.schema_type == PG_SA
 
 
 @pytest.mark.parametrize("get_connection", ("wrong_get_conn", lambda: "some connection"))

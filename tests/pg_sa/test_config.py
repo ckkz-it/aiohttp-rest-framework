@@ -1,15 +1,21 @@
+import asyncio
+
 from aiohttp_rest_framework import APP_CONFIG_KEY
-from tests.aiopg_sa.app import get_app
-from tests.aiopg_sa.utils import create_pg_db, drop_pg_db
 from tests.config import db
+from tests.pg_sa.app import get_app
+from tests.pg_sa.utils import create_db, drop_db
 
 
 def setup_module():
-    create_pg_db(db_name=db["database"])
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(create_db(db_name=db["database"]))
+    loop.close()
 
 
 def teardown_module():
-    drop_pg_db(db_name=db["database"])
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(drop_db(db_name=db["database"]))
+    loop.close()
 
 
 async def test_config_app_connection_property(aiohttp_client):

@@ -136,7 +136,7 @@ class Interval(ma.fields.TimeDelta):
                 raise self.make_error("invalid") from error
 
         try:
-            interval: datetime.timedelta = datetime.timedelta(**{self.precision: value})
+            interval = datetime.timedelta(**{self.precision: value})
             if interval.total_seconds() == 0 and not self.allow_zero:
                 raise self.make_error("zero")
             return interval
@@ -206,7 +206,7 @@ class FieldBuilderABC(metaclass=abc.ABCMeta):
         pass
 
 
-class AioPGSAFieldBuilder(FieldBuilderABC):
+class SAFieldBuilder(FieldBuilderABC):
     def build(
         self,
         name: str,
@@ -247,8 +247,7 @@ class AioPGSAFieldBuilder(FieldBuilderABC):
         if column.server_default:
             kwargs.setdefault("required", False)
 
-    def _set_field_specific_kwargs(self, kwargs: dict, field_cls: typing.Type[ma.fields.Field],
-                                   column: sa.Column):
+    def _set_field_specific_kwargs(self, kwargs: dict, field_cls: typing.Type[ma.fields.Field], column: sa.Column):
         # for `Enum` we have to point which enum class is being used
         if issubclass(field_cls, Enum):
             kwargs["enum"] = column.type.enum_class

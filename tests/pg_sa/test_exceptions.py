@@ -3,29 +3,39 @@ import uuid
 
 import pytest
 from aiohttp.test_utils import TestClient
-from aiopg.sa.result import RowProxy
 
-from tests.aiopg_sa.utils import create_data_fixtures, create_pg_db, create_tables, drop_pg_db
 from tests.config import db
+from tests.pg_sa.utils import create_data_fixtures, create_db, create_tables, drop_db, drop_tables
 
 
 def setup_module():
-    create_pg_db(db_name=db["database"])
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(create_db(db_name=db["database"]))
+    loop.close()
+
+
+def teardown_module():
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(drop_db(db_name=db["database"]))
+    loop.close()
+
+
+def setup_function():
     create_tables()
     loop = asyncio.new_event_loop()
     loop.run_until_complete(create_data_fixtures())
     loop.close()
 
 
-def teardown_module():
-    drop_pg_db(db_name=db["database"])
+def teardown_function():
+    drop_tables()
 
 
-async def test_validation_error_exception(client: TestClient, user: RowProxy):
+async def test_validation_error_exception(client: TestClient, user):
     user_data = {
         "phone": "1111",
     }
-    response = await client.put(f"/users/{user.id}", json=user_data)
+    response = await client.put(f"/users/{user['id']}", json=user_data)
     assert response.status == 400
     assert response.content_type == "application/json"
     err = await response.json()

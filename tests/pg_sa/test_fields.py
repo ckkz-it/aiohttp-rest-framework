@@ -1,27 +1,23 @@
 import asyncio
 
-from aiopg.sa.result import RowProxy
-
 from aiohttp_rest_framework.fields import sa_ma_pg_field_mapping
 from aiohttp_rest_framework.serializers import ModelSerializer
 from aiohttp_rest_framework.utils import ClassLookupDict
 from tests import models
-from tests.aiopg_sa.utils import (
-    create_data_fixtures,
-    create_pg_db,
-    create_tables,
-    drop_pg_db,
-    drop_tables,
-)
 from tests.config import db
+from tests.pg_sa.utils import create_data_fixtures, create_db, create_tables, drop_db, drop_tables
 
 
 def setup_module():
-    create_pg_db(db_name=db["database"])
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(create_db(db_name=db["database"]))
+    loop.close()
 
 
 def teardown_module():
-    drop_pg_db(db_name=db["database"])
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(drop_db(db_name=db["database"]))
+    loop.close()
 
 
 def setup_function():
@@ -35,23 +31,22 @@ def teardown_function():
     drop_tables()
 
 
-class AioPGSASerializer(ModelSerializer):
+class PGSASerializer(ModelSerializer):
     class Meta:
-        model = models.aiopg_sa_fields
+        model = models.pg_sa_fields
         fields = "__all__"
 
 
-async def test_aiopg_sa_inferred_field_serialization(aiopg_sa_instance: RowProxy):
+async def test_pg_sa_inferred_field_serialization(pg_sa_instance):
     reversed_field_mapping = reversed(ClassLookupDict(sa_ma_pg_field_mapping))
-    serializer = AioPGSASerializer(aiopg_sa_instance)
+    serializer = PGSASerializer(pg_sa_instance)
     assert serializer.data
     for field in serializer.fields.values():
         assert field in reversed_field_mapping
 
 
-# pass here client to initialize app's db property (will be needed to create instance)
-async def test_aiopg_sa_inferred_field_deserialization(get_fixtures_by_name, client):
-    sa_fields_data = get_fixtures_by_name("aiopg_sa_fields")[0]
-    serializer = AioPGSASerializer(data=sa_fields_data)
+async def test_pg_sa_inferred_field_deserialization(get_fixtures_by_name, client):
+    sa_fields_data = get_fixtures_by_name("pg_sa_fields")[0]
+    serializer = PGSASerializer(data=sa_fields_data)
     serializer.is_valid(raise_exception=True)
     await serializer.save()

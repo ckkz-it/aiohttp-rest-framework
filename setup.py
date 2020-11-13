@@ -23,9 +23,8 @@ setup(
     install_requires=[
         "aiohttp",
         "aiohttp-cors",
-        "aiopg",
         "marshmallow",
-        "sqlalchemy",
+        "git+https://github.com/ckkz-it/databases.git@sqlalchemy-defaults#egg=databases[postgresql]",
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",

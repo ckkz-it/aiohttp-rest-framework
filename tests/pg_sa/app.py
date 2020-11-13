@@ -1,21 +1,20 @@
 import typing
 from functools import partial
 
-import aiopg.sa
 from aiohttp import web
 
-from aiohttp_rest_framework import APP_CONFIG_KEY
+from aiohttp_rest_framework import APP_CONFIG_KEY, create_connection
 from tests.base_app import get_base_app
-from tests.config import postgres_url
+from tests.config import db_url
 
 
 async def init_pg(app_conn_prop, app: web.Application) -> None:
-    app[app_conn_prop] = await aiopg.sa.create_engine(postgres_url)
+    app[app_conn_prop] = await create_connection(db_url)
+    await app[app_conn_prop].connect()
 
 
 async def close_pg(app_conn_prop, app: web.Application) -> None:
-    app[app_conn_prop].close()
-    await app[app_conn_prop].wait_closed()
+    await app[app_conn_prop].disconnect()
 
 
 def get_app(rest_config: typing.Mapping = None):

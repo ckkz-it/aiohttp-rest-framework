@@ -4,7 +4,6 @@ from aiohttp import web
 from aiohttp_cors import CorsViewMixin
 
 from aiohttp_rest_framework import APP_CONFIG_KEY
-from aiohttp_rest_framework.db import DatabaseServiceABC, op
 from aiohttp_rest_framework.exceptions import HTTPNotFound, ObjectNotFound
 from aiohttp_rest_framework.mixins import (
     CreateModelMixin,
@@ -60,7 +59,8 @@ class GenericAPIView(APIView):
 
     serializer_class: typing.Type[Serializer] = None
 
-    _db_service: DatabaseServiceABC = None
+    # TODO(ckkz-it): type annotation
+    _db_service = None
 
     def __init__(self, request: web.Request) -> None:
         super().__init__(request)
@@ -72,10 +72,10 @@ class GenericAPIView(APIView):
         }
         self.detail = lookup_field_value is not None
 
-    async def get_db_service(self) -> DatabaseServiceABC:
+    async def get_db_service(self):
         """Get database service applicable for current engine """
         connection = await self.rest_config.get_connection()
-        return self.rest_config.db_service_class(connection, self.model)
+        return self.rest_config.db_service_class(self.model, connection)
 
     @property
     def model(self):
@@ -106,7 +106,7 @@ class GenericAPIView(APIView):
         where = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
         db_service = await self.get_db_service()
         try:
-            obj = await db_service.get(**where)
+            obj = await db_service.get(where)
         except ObjectNotFound:
             raise HTTPNotFound()
         return obj

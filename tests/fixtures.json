@@ -27,7 +27,7 @@
       "name": "Facebook"
     }
   ],
-  "aiopg_sa_fields": [
+  "pg_sa_fields": [
     {
       "BigInteger": 100,
       "Boolean": true,
