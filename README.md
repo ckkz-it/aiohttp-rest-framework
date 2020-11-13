@@ -1,12 +1,14 @@
 # aiohttp-rest-framework
 
-[![codecov](https://codecov.io/gh/ckkz-it/aiohttp-rest-framework/branch/master/graph/badge.svg)](https://codecov.io/gh/ckkz-it/aiohttp-rest-framework)
-
+[![Codecov](https://img.shields.io/codecov/c/github/ckkz-it/aiohttp-rest-framework)](https://codecov.io/gh/ckkz-it/aiohttp-rest-framework)
+[![PyPI](https://img.shields.io/pypi/v/aiohttp-rest-framework)](https://pypi.org/project/aiohttp-rest-framework/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/aiohttp-rest-framework)](https://pypi.org/project/aiohttp-rest-framework/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/aiohttp-rest-framework)](https://pypi.org/project/aiohttp-rest-framework/)
 ---
 
 Fully asynchronous rest framework for aiohttp web server, inspired by [Django Rest Framework](https://www.django-rest-framework.org) (DRF), powered by [marshmallow](https://github.com/marshmallow-code/marshmallow) and [SQLAlchemy](https://www.sqlalchemy.org).
 
-Currently supports only combination of postgres (thanks to [aiopg](https://github.com/aio-libs/aiopg)) and sqlalchemy.
+Currently supports only combination of postgres (thanks to [databases](https://github.com/encode/databases) library) and sqlalchemy (core). MySQL support will be shipped in the near future.
 
 ## Installation
 
@@ -19,16 +21,17 @@ pip install aiohttp-rest-framework
 Consider we have the following sqlalchemy tables (models):
 
 ```python
-from uuid import uuid4
-
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
+
+from app.utils import get_stringified_uuid
+
 
 meta = sa.MetaData()
 
 users = sa.Table(
     "users", meta,
-    sa.Column("id", UUID(as_uuid=True), primary_key=True, default=uuid4),
+    sa.Column("id", UUID, primary_key=True, default=get_stringified_uuid),
     sa.Column("name", sa.Text),
     sa.Column("email", sa.Text, unique=True),
     sa.Column("phone", sa.Text),
@@ -37,7 +40,7 @@ users = sa.Table(
 
 companies = sa.Table(
     "companies", meta,
-    sa.Column("id", UUID(as_uuid=True), primary_key=True, default=uuid4),
+    sa.Column("id", UUID, primary_key=True, default=get_stringified_uuid),
     sa.Column("name", sa.Text),
 )
 ```
@@ -55,6 +58,8 @@ class UserSerializer(serializers.ModelSerializer):
         model = users
         fields = "__all__"
 ```
+
+> Note: for more information about field declaration please refer to [marshmallow](https://github.com/marshmallow-code/marshmallow)
 
 And, finally, now we can use our serializer in class based views:
 
@@ -75,22 +80,16 @@ class UsersRetrieveUpdateDestroyView(views.RetrieveUpdateDestroyAPIView):
 Our simple app would look like this:
 
 ```python
-import aiopg.sa
 from aiohttp import web
-from aiohttp_rest_framework import setup_rest_framework
+from aiohttp_rest_framework import setup_rest_framework, create_connection
 
 from app import views, config
 
-# if you want to use other property than "db", you have to specify
-# `app_connection_property` in config, passing to `setup_rest_framework`
-# Example:
-#   >>> setup_rest_framework(app, {"app_connection_property": "my_custom_prop"})
-async def init_pg(app: web.Application) -> None:
-    app["db"] = await aiopg.sa.create_engine(config.db_url)
+async def init_pg(app_: web.Application) -> None:
+    app_["db"] = await create_connection(config.db_url)
 
-async def close_pg(app: web.Application) -> None:
-    app["db"].close()
-    await app["db"].wait_closed()
+async def close_pg(app_: web.Application) -> None:
+    await app_["db"].disconnect()
 
 app = web.Application()
 app.on_startup.append(init_pg)
@@ -100,6 +99,13 @@ app.router.add_view("/users/{id}", views.UsersRetrieveUpdateDestroyView)
 setup_rest_framework(app)
 web.run_app(app)
 ```
+
+> Note: 
+> if you want to use other property than "db", you have to specify
+> `app_connection_property` in config, passing to `setup_rest_framework`.
+>
+> Example:
+> `setup_rest_framework(app, {"app_connection_property": "my_custom_prop"})`
 
 Mention `setup_rest_framework()` function, it is required to call it to configure framework to work with your app.
 For available rest framework's config options refer to [documentation]().
@@ -157,7 +163,7 @@ Python >= 3.6
 
 #### Dependencies:
 - aiohttp
-- aiopg
+- databases[postgresql] (actually [the fork](git+https://github.com/ckkz-it/databases.git@sqlalchemy-defaults#egg=databases[postgresql]) of it with fixed sqlalchemy column defaults)
 - sqlalchemy
 - marshmallow
 
