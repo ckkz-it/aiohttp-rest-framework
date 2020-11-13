@@ -231,6 +231,7 @@ class SAFieldBuilder(FieldBuilderABC):
     def _set_db_specific_kwargs(self, kwargs: dict, column: sa.Column):
         if column.nullable:
             kwargs.setdefault("allow_none", True)
+            kwargs.setdefault("required", False)
         if column.primary_key:
             kwargs.setdefault("dump_only", True)  # pk is read only
             kwargs.setdefault("required", False)

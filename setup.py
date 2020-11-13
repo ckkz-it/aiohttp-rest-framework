@@ -1,8 +1,10 @@
-from setuptools import setup
+from pathlib import Path
+
+from setuptools import setup, find_packages
 
 from aiohttp_rest_framework import __version__
 
-with open("README.md") as f:
+with open(Path(__file__).parent / "README.md") as f:
     long_description = f.read()
 
 setup(
@@ -18,13 +20,14 @@ setup(
     long_description_content_type="text/markdown",
     keywords=("restframework rest_framework aiohttp"
               " serializers asyncio rest aiohttp_rest_framework"),
-    packages=["aiohttp_rest_framework"],
+    packages=find_packages(exclude=("tests", "tests.*")),
     python_requires=">=3.6",
     install_requires=[
         "aiohttp",
         "aiohttp-cors",
         "marshmallow",
         "databases-extended[postgresql]==0.4.1",
+        "SQLAlchemy==1.4.0b1",
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",
@@ -35,6 +38,7 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Topic :: Internet :: WWW/HTTP",
         "License :: OSI Approved :: MIT License",
     ]

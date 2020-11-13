@@ -10,7 +10,6 @@ from tests.config import db_url
 
 async def init_pg(app_conn_prop, app: web.Application) -> None:
     app[app_conn_prop] = await create_connection(db_url)
-    await app[app_conn_prop].connect()
 
 
 async def close_pg(app_conn_prop, app: web.Application) -> None:

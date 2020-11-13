@@ -2,15 +2,19 @@ import inspect
 from typing import Dict, Generic, Optional, Tuple, TypeVar
 
 import sqlalchemy as sa
+from sqlalchemy.ext.asyncio import create_async_engine
+
+from databases import Database
+from sqlalchemy import MetaData
 
 __all__ = (
     "ClassLookupDict",
     "get_model_fields_sa",
     "safe_issubclass",
     "create_connection",
+    "create_tables",
+    "drop_tables",
 )
-
-from databases import Database
 
 C1 = TypeVar("C1")
 C2 = TypeVar("C2")
@@ -70,5 +74,19 @@ async def create_connection(dsn: str, **kwargs) -> Database:
 
     config = get_global_config()
     if config.schema_type == PG_SA:
-        return Database(dsn, **kwargs)
+        database = Database(dsn, **kwargs)
+        await database.connect()
+        return database
     raise NotImplementedError()
+
+
+async def create_tables(db_url: str, metadata: MetaData) -> None:
+    engine = create_async_engine(db_url)
+    async with engine.begin() as conn:
+        await conn.run_sync(metadata.create_all)
+
+
+async def drop_tables(db_url: str, metadata: MetaData) -> None:
+    engine = create_async_engine(db_url)
+    async with engine.begin() as conn:
+        await conn.run_sync(metadata.drop_all)

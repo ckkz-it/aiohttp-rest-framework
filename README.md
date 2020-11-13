@@ -82,14 +82,21 @@ Our simple app would look like this:
 ```python
 from aiohttp import web
 from aiohttp_rest_framework import setup_rest_framework, create_connection
+from aiohttp_rest_framework.utils import create_tables
 
-from app import views, config
+from app import views, config, models
+
 
 async def init_pg(app_: web.Application) -> None:
     app_["db"] = await create_connection(config.db_url)
+    # in case you need to create tables in the database
+    # this is the same as `meta.create_all()`, but asynchronous
+    await create_tables(config.db_url, models.meta)
+
 
 async def close_pg(app_: web.Application) -> None:
     await app_["db"].disconnect()
+
 
 app = web.Application()
 app.on_startup.append(init_pg)
@@ -163,7 +170,7 @@ Python >= 3.6
 
 #### Dependencies:
 - aiohttp
-- databases[postgresql] (actually [the fork](git+https://github.com/ckkz-it/databases.git@sqlalchemy-defaults#egg=databases[postgresql]) of it with fixed sqlalchemy column defaults)
+- databases[postgresql] (actually [the fork](https://pypi.org/project/databases-extended/0.4.1/) of it with fixed sqlalchemy column defaults)
 - sqlalchemy
 - marshmallow
 
