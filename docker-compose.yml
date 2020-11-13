@@ -1,0 +1,22 @@
+version: "3"
+services:
+  app:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/usr/src/app
+    command: /usr/local/bin/pytest -s /usr/src/app/tests
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:12.4-alpine
+    environment:
+      - POSTGRES_USER=docker
+      - POSTGRES_PASSWORD=docker
+      - POSTGRES_DB=docker
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    ports:
+      - "5432:5432"
