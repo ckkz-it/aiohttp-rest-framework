@@ -40,14 +40,15 @@ from aiohttp_rest_framework.exceptions import (
 )
 
 
-class SAManager(BaseDBManager[Row]):
+class SAManager(BaseDBManager):
     def __init__(self, config, model) -> None:
         from aiohttp_rest_framework.settings import Config
         self.model = model
         self.config: Config = config
         self._engine = None
+        self._is_core = isinstance(self.model, Table)
 
-    async def get(self, filter_params: Optional[Dict] = None, whereclause: Optional[BooleanClauseList] = None) -> Row:
+    async def get(self, filter_params: Optional[Dict] = None, whereclause: Optional[BooleanClauseList] = None):
         query = select(self.model)
         if whereclause is not None:
             query = query.where(whereclause)
@@ -55,15 +56,13 @@ class SAManager(BaseDBManager[Row]):
             query = query.where(self._construct_whereclause(filter_params))
 
         try:
-            result = await self.execute(query, operation="one")
-            return result
+            return await self.execute(query, operation="one")
         except FieldValidationError as exc:
             raise ObjectNotFound(str(exc))
 
     async def all(self) -> List[Any]:
         query = select(self.model)
-        result = await self.execute(query, operation="all")
-        return result
+        return await self.execute(query, operation="all")
 
     async def filter(
         self,
@@ -76,16 +75,14 @@ class SAManager(BaseDBManager[Row]):
         else:
             query = query.where(self._construct_whereclause(filter_params))
 
-        result = await self.execute(query, operation="all")
-        return result
+        return await self.execute(query, operation="all")
 
     async def create(self, values: Mapping) -> Any:
         query = insert(self.model).values(values).returning(literal_column("*"))
         result = await self.execute(query, operation="one", no_scalars=True)
-        inst = self.to_model_instance(result)
-        return inst
+        return self.to_model_instance(result)
 
-    async def update(self, instance, values: Mapping) -> Row:
+    async def update(self, instance, values: Mapping):
         query = update(
             self.model
         ).where(
@@ -117,7 +114,7 @@ class SAManager(BaseDBManager[Row]):
                 try:
                     result = await session.execute(query, parameters)
                     if operation:
-                        if not no_scalars:
+                        if not no_scalars and not self._is_core:
                             result = result.scalars()
                         result = getattr(result, operation)()
                 except (SQLAlchemyError, PostgresError) as exc:
@@ -130,19 +127,19 @@ class SAManager(BaseDBManager[Row]):
 
     @property
     def pk(self) -> Any:
-        if isinstance(self.model, Table):
+        if self._is_core:
             pks = self.model.primary_key.columns.keys()
         else:
             pks = self.model.__table__.primary_key.columns.keys()
         return pks[0]
 
     def get_pk_column(self) -> Column:
-        if isinstance(self.model, Table):
+        if self._is_core:
             return self.model.columns[self.pk]
         return getattr(self.model, self.pk)
 
     def _construct_whereclause(self, params: Dict) -> BooleanClauseList:
-        if isinstance(self.model, Table):
+        if self._is_core:
             return and_(self.model.columns[key] == value for key, value in params.items())
         return and_(getattr(self.model, key) == value for key, value in params.items())
 
@@ -180,5 +177,7 @@ class SAManager(BaseDBManager[Row]):
 
         return exc
 
-    def to_model_instance(self, result: Row):
+    def to_model_instance(self, result: Row) -> Any:
+        if self._is_core:
+            return result
         return self.model(**result._asdict())

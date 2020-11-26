@@ -12,6 +12,7 @@ def stringified_uuid():
 
 
 Base = declarative_base()
+meta = Base.metadata
 
 
 class User(Base):

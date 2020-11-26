@@ -16,7 +16,11 @@ sort_imports:
 
 .PHONY: build_package
 build_package:
-	@rm -rf build dist && docker-compose run --rm --no-deps tests sh -c 'python setup.py sdist bdist_wheel --universal'
+	@rm -rf build dist && docker-compose run \
+		--rm \
+		--no-deps \
+		tests \
+		sh -c 'rm -rf build dist && python setup.py sdist bdist_wheel --universal'
 
 .PHONY: deploy_package
 deploy_package:

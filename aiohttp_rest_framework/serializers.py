@@ -64,7 +64,7 @@ class SerializerMeta(ma.schema.SchemaMeta):
 T = TypeVar("T")
 
 
-class Serializer(ma.Schema):
+class Serializer(Generic[T], ma.Schema):
     _config: Config = None
 
     OPTIONS_CLASS = SerializerOpts
@@ -103,7 +103,7 @@ class Serializer(ma.Schema):
     async def create(self, validated_data) -> T:
         raise NotImplementedError("`create()` must be implemented.")
 
-    async def save(self, **kwargs):
+    async def save(self, **kwargs) -> T:
         assert hasattr(self, "_errors"), (
             "You must call `.is_valid()` before calling `.save()`."
         )
@@ -164,7 +164,7 @@ class Serializer(ma.Schema):
             raise AssertionError(msg)
         return self._validated_data
 
-    def is_valid(self, raise_exception=False):
+    def is_valid(self, raise_exception=False) -> bool:
         assert hasattr(self, "initial_data"), (
             "Cannot call `.is_valid()` as no `data=` keyword argument was "
             "passed when instantiating the serializer instance."
@@ -237,7 +237,7 @@ class ModelSerializerMeta(SerializerMeta):
         return False
 
 
-class ModelSerializer(Generic[T], Serializer, metaclass=ModelSerializerMeta):
+class ModelSerializer(Generic[T], Serializer[T], metaclass=ModelSerializerMeta):
     OPTIONS_CLASS = ModelSerializerOpts
     opts: ModelSerializerOpts = None
 

@@ -9,6 +9,7 @@ import sqlalchemy as sa
 from marshmallow.fields import *  # noqa
 from marshmallow.fields import __all__ as ma_fields_all  # noqa
 from psycopg2.extensions import PYINTERVAL
+from sqlalchemy import Table
 from sqlalchemy.dialects.postgresql import ARRAY, JSON
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 
@@ -214,10 +215,14 @@ class SAFieldBuilder(FieldBuilderABC):
         **kwargs
     ):
         model = serializer.opts.model
-        column: sa.Column = model.__table__.columns.get(name)
+        if isinstance(model, Table):
+            table = model
+        else:
+            table = model.__table__
+        column: sa.Column = table.columns.get(name)
         assert column is not None, (
             f"{name} was not found for {serializer.__class__.__name__} serializer "
-            f"in {model.name} model"
+            f"in {table.name} model"
         )
 
         mapping = ClassLookupDict(sa_ma_pg_field_mapping)
