@@ -12,6 +12,7 @@ services:
     environment:
       - DB_URL
       - DB_NAME
+      - CODECOV_TOKEN
 
   postgres:
     image: postgres:12.4-alpine

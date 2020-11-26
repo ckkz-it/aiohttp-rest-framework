@@ -4,7 +4,7 @@ omit =
     dist
     build
     aiohttp_rest_framework.egg-info
-
+relative_files = True
 [report]
 exclude_lines =
     pass
