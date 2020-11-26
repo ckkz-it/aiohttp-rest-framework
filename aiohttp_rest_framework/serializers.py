@@ -1,7 +1,7 @@
 import copy
 from itertools import chain
 from json import JSONDecodeError
-from typing import Any, Generic, Optional, OrderedDict, Sequence, TypeVar, cast
+from typing import Any, Generic, Optional, OrderedDict, Sequence, TypeVar, cast, Mapping
 
 import marshmallow as ma
 
@@ -237,7 +237,7 @@ class ModelSerializerMeta(SerializerMeta):
         return False
 
 
-class ModelSerializer(Generic[T], Serializer[T], metaclass=ModelSerializerMeta):
+class ModelSerializer(Serializer[T], metaclass=ModelSerializerMeta):
     OPTIONS_CLASS = ModelSerializerOpts
     opts: ModelSerializerOpts = None
 
@@ -269,14 +269,14 @@ class ModelSerializer(Generic[T], Serializer[T], metaclass=ModelSerializerMeta):
         """
         return self.config.get_model_fields(self.opts.model)
 
-    async def update(self, instance: T, validated_data: OrderedDict) -> T:
+    async def update(self, instance: T, validated_data: Mapping) -> T:
         db_service = await self.get_db_manager()
         try:
             return await db_service.update(instance, validated_data)
         except DatabaseException as e:
             raise ValidationError({"error": e.message})
 
-    async def create(self, validated_data: OrderedDict) -> T:
+    async def create(self, validated_data: Mapping) -> T:
         db_service = await self.get_db_manager()
         try:
             return await db_service.create(validated_data)

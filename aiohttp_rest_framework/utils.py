@@ -77,25 +77,25 @@ async def create_connection(db_url: str, **kwargs) -> AsyncEngine:
     raise NotImplementedError()
 
 
-async def create_tables(metadata: MetaData, db_url: Optional[str] = None, engine: Optional[Any] = None) -> None:
-    assert db_url or engine, "either db_url or engine must be provided"
+async def create_tables(metadata: MetaData, connection: Optional[Any] = None, db_url: Optional[str] = None) -> None:
+    assert db_url or connection, "either db_url or connection must be provided"
     from aiohttp_rest_framework.settings import SA, get_global_config
 
     config = get_global_config()
     if config.schema_type == SA:
-        engine = engine or create_async_engine(db_url)
+        engine = connection or create_async_engine(db_url)
         async with engine.begin() as conn:
             return await conn.run_sync(metadata.create_all)
     raise NotImplementedError()
 
 
-async def drop_tables(metadata: MetaData, db_url: Optional[str] = None, engine: Optional[Any] = None) -> None:
-    assert db_url or engine, "either db_url or engine must be provided"
+async def drop_tables(metadata: MetaData, connection: Optional[Any] = None, db_url: Optional[str] = None) -> None:
+    assert db_url or connection, "either db_url or connection must be provided"
     from aiohttp_rest_framework.settings import SA, get_global_config
 
     config = get_global_config()
     if config.schema_type == SA:
-        engine = engine or create_async_engine(db_url)
+        engine = connection or create_async_engine(db_url)
         async with engine.begin() as conn:
             return await conn.run_sync(metadata.drop_all)
     raise NotImplementedError()

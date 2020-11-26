@@ -3,7 +3,7 @@ from aiohttp_rest_framework.serializers import ModelSerializer
 from tests.test_app.sa.orm import models
 
 
-class UserSerializer(ModelSerializer):
+class UserSerializer(ModelSerializer[models.User]):
     password = fields.Str(load_only=True, required=False)
     company_id = fields.Str(required=False)
 
