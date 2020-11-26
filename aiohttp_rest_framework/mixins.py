@@ -63,9 +63,9 @@ class UpdateModelMixin:
 class DestroyModelMixin:
     async def destroy(self):
         instance = await self.get_object()
-        await self.perform_destroy(instance)
+        serializer = self.get_serializer(instance)
+        await self.perform_destroy(serializer)
         return web.HTTPNoContent()
 
-    async def perform_destroy(self, instance):
-        db_service = await self.get_db_service()
-        await db_service.delete(instance)
+    async def perform_destroy(self, serializer: Serializer):
+        await serializer.delete()

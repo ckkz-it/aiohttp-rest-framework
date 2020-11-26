@@ -1,9 +1,9 @@
 import typing
 
 from aiohttp import web
-from aiohttp_cors import CorsViewMixin
 
 from aiohttp_rest_framework import APP_CONFIG_KEY
+from aiohttp_rest_framework.db.base import BaseDBManager
 from aiohttp_rest_framework.exceptions import HTTPNotFound, ObjectNotFound
 from aiohttp_rest_framework.mixins import (
     CreateModelMixin,
@@ -30,8 +30,8 @@ __all__ = (
 )
 
 
-class APIView(CorsViewMixin, web.View):
-    """Base API View with cors support.
+class APIView(web.View):
+    """Base API View.
 
     Should be used when you won't use serializer and models
     for particular view.
@@ -43,7 +43,7 @@ class APIView(CorsViewMixin, web.View):
             return self.request.app[APP_CONFIG_KEY]
         except KeyError:
             msg = (
-                "Looks like you didn't call `setup_rest_framework()` "
+                "Looks like you didn't call `setup_rest_framework(app)` "
                 "function for your application."
             )
             raise AssertionError(msg)
@@ -59,8 +59,7 @@ class GenericAPIView(APIView):
 
     serializer_class: typing.Type[Serializer] = None
 
-    # TODO(ckkz-it): type annotation
-    _db_service = None
+    _db_manager: BaseDBManager = None
 
     def __init__(self, request: web.Request) -> None:
         super().__init__(request)
@@ -72,10 +71,11 @@ class GenericAPIView(APIView):
         }
         self.detail = lookup_field_value is not None
 
-    async def get_db_service(self):
-        """Get database service applicable for current engine """
-        connection = await self.rest_config.get_connection()
-        return self.rest_config.db_service_class(self.model, connection)
+    async def get_db_manager(self):
+        """Get db manager applicable for current engine"""
+        if not self._db_manager:
+            self._db_manager = self.rest_config.db_manager_class(self.rest_config, self.model)
+        return self._db_manager
 
     @property
     def model(self):
@@ -103,17 +103,17 @@ class GenericAPIView(APIView):
 
     async def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-        where = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-        db_service = await self.get_db_service()
+        params = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
+        db_manager = await self.get_db_manager()
         try:
-            obj = await db_service.get(where)
+            obj = await db_manager.get(params)
         except ObjectNotFound:
             raise HTTPNotFound()
         return obj
 
     async def get_list(self):
-        db_service = await self.get_db_service()
-        return await db_service.all()
+        db_manager = await self.get_db_manager()
+        return await db_manager.all()
 
 
 class CreateAPIView(CreateModelMixin,

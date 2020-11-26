@@ -1,10 +1,8 @@
 import inspect
-from typing import Dict, Generic, Optional, Tuple, TypeVar
+from typing import Any, Dict, Generic, Optional, Tuple, TypeVar
 
-import sqlalchemy as sa
-from databases import Database
-from sqlalchemy import MetaData
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy import MetaData, Table
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 __all__ = (
     "ClassLookupDict",
@@ -57,7 +55,9 @@ class ClassLookupDict(Generic[C1, C2]):
             return False
 
 
-def get_model_fields_sa(model: sa.Table) -> Tuple[str]:
+def get_model_fields_sa(model) -> Tuple[str]:
+    if not isinstance(model, Table):
+        model = model.__table__
     return tuple(str(column.name) for column in model.columns)
 
 
@@ -68,24 +68,34 @@ def safe_issubclass(first, other) -> bool:
         return False
 
 
-async def create_connection(dsn: str, **kwargs) -> Database:
-    from aiohttp_rest_framework.settings import PG_SA, get_global_config
+async def create_connection(db_url: str, **kwargs) -> AsyncEngine:
+    from aiohttp_rest_framework.settings import SA, get_global_config
 
     config = get_global_config()
-    if config.schema_type == PG_SA:
-        database = Database(dsn, **kwargs)
-        await database.connect()
-        return database
+    if config.schema_type == SA:
+        return create_async_engine(db_url, **kwargs)
     raise NotImplementedError()
 
 
-async def create_tables(db_url: str, metadata: MetaData) -> None:
-    engine = create_async_engine(db_url)
-    async with engine.begin() as conn:
-        await conn.run_sync(metadata.create_all)
+async def create_tables(metadata: MetaData, db_url: Optional[str] = None, engine: Optional[Any] = None) -> None:
+    assert db_url or engine, "either db_url or engine must be provided"
+    from aiohttp_rest_framework.settings import SA, get_global_config
+
+    config = get_global_config()
+    if config.schema_type == SA:
+        engine = engine or create_async_engine(db_url)
+        async with engine.begin() as conn:
+            return await conn.run_sync(metadata.create_all)
+    raise NotImplementedError()
 
 
-async def drop_tables(db_url: str, metadata: MetaData) -> None:
-    engine = create_async_engine(db_url)
-    async with engine.begin() as conn:
-        await conn.run_sync(metadata.drop_all)
+async def drop_tables(metadata: MetaData, db_url: Optional[str] = None, engine: Optional[Any] = None) -> None:
+    assert db_url or engine, "either db_url or engine must be provided"
+    from aiohttp_rest_framework.settings import SA, get_global_config
+
+    config = get_global_config()
+    if config.schema_type == SA:
+        engine = engine or create_async_engine(db_url)
+        async with engine.begin() as conn:
+            return await conn.run_sync(metadata.drop_all)
+    raise NotImplementedError()

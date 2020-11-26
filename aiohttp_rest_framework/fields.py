@@ -213,8 +213,8 @@ class SAFieldBuilder(FieldBuilderABC):
         serializer=None,
         **kwargs
     ):
-        model: sa.Table = serializer.opts.model
-        column: sa.Column = model.columns.get(name)
+        model = serializer.opts.model
+        column: sa.Column = model.__table__.columns.get(name)
         assert column is not None, (
             f"{name} was not found for {serializer.__class__.__name__} serializer "
             f"in {model.name} model"
@@ -223,12 +223,12 @@ class SAFieldBuilder(FieldBuilderABC):
         mapping = ClassLookupDict(sa_ma_pg_field_mapping)
         field_cls = mapping.get(column.type, ma.fields.Inferred)
 
-        self._set_db_specific_kwargs(kwargs, column)
-        self._set_field_specific_kwargs(kwargs, field_cls, column)
+        self._set_db_specific_kwargs(column, kwargs)
+        self._set_field_specific_kwargs(column, kwargs, field_cls)
         field = field_cls(**kwargs)
         return field
 
-    def _set_db_specific_kwargs(self, kwargs: dict, column: sa.Column):
+    def _set_db_specific_kwargs(self, column: sa.Column, kwargs: dict) -> None:
         if column.nullable:
             kwargs.setdefault("allow_none", True)
             kwargs.setdefault("required", False)
@@ -248,7 +248,7 @@ class SAFieldBuilder(FieldBuilderABC):
         if column.server_default:
             kwargs.setdefault("required", False)
 
-    def _set_field_specific_kwargs(self, kwargs: dict, field_cls: typing.Type[ma.fields.Field], column: sa.Column):
+    def _set_field_specific_kwargs(self, column: sa.Column, kwargs: dict, field_cls: typing.Type[ma.fields.Field]):
         # for `Enum` we have to point which enum class is being used
         if issubclass(field_cls, Enum):
             kwargs["enum"] = column.type.enum_class

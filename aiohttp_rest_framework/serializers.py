@@ -1,10 +1,11 @@
 import copy
-import typing
 from itertools import chain
 from json import JSONDecodeError
+from typing import Any, Generic, Optional, OrderedDict, Sequence, TypeVar, cast
 
 import marshmallow as ma
 
+from aiohttp_rest_framework.db.base import BaseDBManager
 from aiohttp_rest_framework.exceptions import DatabaseException, ValidationError
 from aiohttp_rest_framework.settings import Config, get_global_config
 
@@ -60,15 +61,18 @@ class SerializerMeta(ma.schema.SchemaMeta):
         return Meta
 
 
+T = TypeVar("T")
+
+
 class Serializer(ma.Schema):
     _config: Config = None
 
     OPTIONS_CLASS = SerializerOpts
     opts: SerializerOpts = None
 
-    instance: typing.Any = None
+    instance: Any = None
 
-    def __init__(self, instance=None, data: typing.Any = empty, as_text: bool = False, **kwargs):
+    def __init__(self, instance: Optional[T] = None, data: Any = empty, as_text: bool = False, **kwargs):
         self.instance = instance
         if data is not empty:
             self.initial_data = data
@@ -84,16 +88,19 @@ class Serializer(ma.Schema):
         except JSONDecodeError:
             raise ValidationError({"error": "invalid json"})
 
-    def to_representation(self, instance):
+    def to_representation(self, instance: T):
         return self.dump(instance)
 
     def get_initial(self):
         return copy.deepcopy(self.initial_data)
 
-    async def update(self, instance, validated_data):
+    async def delete(self) -> None:
         raise NotImplementedError("`update()` must be implemented.")
 
-    async def create(self, validated_data):
+    async def update(self, instance: T, validated_data) -> T:
+        raise NotImplementedError("`update()` must be implemented.")
+
+    async def create(self, validated_data) -> T:
         raise NotImplementedError("`create()` must be implemented.")
 
     async def save(self, **kwargs):
@@ -106,7 +113,7 @@ class Serializer(ma.Schema):
         )
 
         validated_data = dict(
-            list(self.validated_data.items()) + list(typing.cast(typing.Any, kwargs.items()))
+            list(self.validated_data.items()) + list(cast(Any, kwargs.items()))
         )
 
         if self.instance is not None:
@@ -230,7 +237,7 @@ class ModelSerializerMeta(SerializerMeta):
         return False
 
 
-class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
+class ModelSerializer(Generic[T], Serializer, metaclass=ModelSerializerMeta):
     OPTIONS_CLASS = ModelSerializerOpts
     opts: ModelSerializerOpts = None
 
@@ -255,30 +262,38 @@ class ModelSerializer(Serializer, metaclass=ModelSerializerMeta):
                 if field_name in self.load_fields:
                     self.load_fields[field_name] = new_field
 
-    def _get_model_field_names(self) -> typing.Sequence[str]:
+    def _get_model_field_names(self) -> Sequence[str]:
         """
         Override this method for custom logic getting model fields when __all__ specified
         By default it's specified in config for concrete db/orm mapping
         """
         return self.config.get_model_fields(self.opts.model)
 
-    async def update(self, instance: typing.Any, validated_data: typing.OrderedDict):
-        db_service = await self.get_db_service()
+    async def update(self, instance: T, validated_data: OrderedDict) -> T:
+        db_service = await self.get_db_manager()
         try:
             return await db_service.update(instance, validated_data)
         except DatabaseException as e:
             raise ValidationError({"error": e.message})
 
-    async def create(self, validated_data: typing.OrderedDict):
-        db_service = await self.get_db_service()
+    async def create(self, validated_data: OrderedDict) -> T:
+        db_service = await self.get_db_manager()
         try:
             return await db_service.create(validated_data)
         except DatabaseException as e:
             raise ValidationError({"error": e.message})
 
-    async def get_db_service(self):
-        connection = await self.config.get_connection()
-        return self.config.db_service_class(self.opts.model, connection)
+    async def delete(self, instance: Optional[T] = None) -> None:
+        assert self.instance or instance, "instance has to be defined to delete object"
+        instance = self.instance or instance
+        db_service = await self.get_db_manager()
+        try:
+            return await db_service.delete(instance)
+        except DatabaseException as e:
+            raise ValidationError({"error": e.message})
+
+    async def get_db_manager(self) -> BaseDBManager:
+        return self.config.db_manager_class(self.config, self.opts.model)
 
     class Meta:
         abstract = True

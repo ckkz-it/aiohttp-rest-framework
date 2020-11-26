@@ -1,2 +1,4 @@
 .git
 .pytest_cache
+build
+dist

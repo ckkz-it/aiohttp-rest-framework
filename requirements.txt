@@ -1,14 +1,10 @@
-aiohttp~=3.7.2
-aiohttp_cors~=0.7.0
-asyncpg~=0.21.0
-databases-extended[postgresql]==0.4.1
-marshmallow~=3.9.1
+aiohttp==3.7.2
+asyncpg==0.21.0
+psycopg2==2.8.6
+marshmallow==3.9.1
 SQLAlchemy==1.4.0b1
 
-pytest~=6.1.2
-pytest-aiohttp~=0.3.0
-pytest-cov~=2.10.1
-python-dotenv~=0.15.0
-flake8~=3.8.4
-isort~=5.6.4
-flake8-quotes~=3.2.0
+coverage==5.3.0
+flake8==3.8.4
+flake8-quotes==3.2.0
+isort==5.6.4

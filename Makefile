@@ -4,11 +4,19 @@ build_image:
 
 .PHONY: tests
 tests:
-	@docker-compose run --rm app
+	@docker-compose run --rm tests
+
+.PHONY: lint
+lint:
+	@docker-compose run --rm tests sh -c 'flake8'
+
+.PHONY: sort_imports
+sort_imports:
+	@docker-compose run --rm tests sh -c 'isort .'
 
 .PHONY: build_package
 build_package:
-	@rm -rf build dist && python setup.py sdist bdist_wheel --universal
+	@rm -rf build dist && docker-compose run --rm --no-deps tests sh -c 'python setup.py sdist bdist_wheel --universal'
 
 .PHONY: deploy_package
 deploy_package:
