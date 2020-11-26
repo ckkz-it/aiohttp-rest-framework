@@ -2,13 +2,13 @@
 
 [![Codecov](https://img.shields.io/codecov/c/github/ckkz-it/aiohttp-rest-framework)](https://codecov.io/gh/ckkz-it/aiohttp-rest-framework)
 [![PyPI](https://img.shields.io/pypi/v/aiohttp-rest-framework)](https://pypi.org/project/aiohttp-rest-framework/)
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/aiohttp-rest-framework)](https://pypi.org/project/aiohttp-rest-framework/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/aiohttp-rest-framework)](https://pypistats.org/packages/aiohttp-rest-framework)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/aiohttp-rest-framework)](https://pypi.org/project/aiohttp-rest-framework/)
 ---
 
 Fully asynchronous rest framework for aiohttp web server, inspired by [Django Rest Framework](https://www.django-rest-framework.org) (DRF), powered by [marshmallow](https://github.com/marshmallow-code/marshmallow) and [SQLAlchemy](https://www.sqlalchemy.org).
 
-Currently supports only combination of postgres (thanks to [databases](https://github.com/encode/databases) library) and sqlalchemy (core). MySQL support will be shipped in the near future.
+Currently supports only combination of postgres and sqlalchemy (ORM and core). MySQL support will be shipped on demand.
 
 ## Installation
 
@@ -19,6 +19,8 @@ pip install aiohttp-rest-framework
 ## Usage example
 
 Consider we have the following SQLAlchemy ORM models:
+
+`models.py`
 
 ```python
 import sqlalchemy as sa
@@ -76,6 +78,8 @@ Company = sa.Table(
 
 Now we can use very familiar to us from DRF serializer, built on top of marshmalow's `Schema`:
 
+`serializers.py`
+
 ```python
 from aiohttp_rest_framework import serializers
 
@@ -105,6 +109,8 @@ Now type hints will be available for serializers methods like `create()`, `updat
 
 And, finally, now we can use our serializer in class based views:
 
+`views.py`
+
 ```python
 from aiohttp_rest_framework import views
 
@@ -120,6 +126,8 @@ class UsersRetrieveUpdateDestroyView(views.RetrieveUpdateDestroyAPIView):
 ```
 
 Our simple app would look like this:
+
+`main.py`
 
 ```python
 from aiohttp import web
@@ -209,9 +217,12 @@ Python >= 3.6
 
 #### Dependencies:
 - aiohttp
-- databases[postgresql] (actually [the fork](https://pypi.org/project/databases-extended/0.4.1/) of it with fixed sqlalchemy column defaults)
 - sqlalchemy
 - marshmallow
+
+If using PostgreSQL (currently being installed by default since it's the only database supported):
+- asyncpg
+- psycopg2
 
 ## Documentation
 
@@ -246,11 +257,12 @@ setup_rest_framework(app, {"app_connection_property": custom_db_prop})
     **Default:** uses `app[app_connection_property]`
 
 ```python
-from app.utils import create_db_connection
-custom_db_prop = "db_conn"
+# somewhere in your code, function to get initialized db connection
+from app.db import get_connection
 
+# this is just to show that is has to be async
 async def get_db_connection():
-    return await create_db_connection()
+    return await get_connection()
 
 app = web.Application()
 setup_rest_framework(app, {"get_connection": get_db_connection})
@@ -261,15 +273,15 @@ setup_rest_framework(app, {"get_connection": get_db_connection})
 
     **Default:** uses manager specific to the current `schema_type`.
 
-Just a dumb useless example just to show how it can be used:
+A totally useless example just to show you how it can be used:
 ```python
 from aiohttp_rest_framework.db.sa import SAManager
 
-class SAManagerWithLogging(SAManager):
+class SAManagerWithPrintingQuery(SAManager):
     async def execute(self, query, *args, **kwargs):
         print(query)
         return await super().execute(query, *args, **kwargs)
 
 app = web.Application()
-setup_rest_framework(app, {"db_manager": SAManagerWithLogging})
+setup_rest_framework(app, {"db_manager": SAManagerWithPrintingQuery})
 ```
