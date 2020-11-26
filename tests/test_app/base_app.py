@@ -3,7 +3,7 @@ import typing
 from aiohttp import web
 
 from aiohttp_rest_framework import setup_rest_framework
-from tests.routes import setup_routes
+from tests.test_app.sa.orm.routes import setup_routes
 
 
 def get_base_app(rest_config: typing.Mapping = None):

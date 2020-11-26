@@ -1,5 +1,5 @@
 from aiohttp_rest_framework import views
-from tests.serializers import UserSerializer
+from tests.test_app.sa.orm.serializers import UserSerializer
 
 
 class UsersListCreateView(views.ListCreateAPIView):

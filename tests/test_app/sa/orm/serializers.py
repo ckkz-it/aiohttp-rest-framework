@@ -1,6 +1,6 @@
 from aiohttp_rest_framework import fields
 from aiohttp_rest_framework.serializers import ModelSerializer
-from tests import models
+from tests.test_app.sa.orm import models
 
 
 class UserSerializer(ModelSerializer):
@@ -8,6 +8,6 @@ class UserSerializer(ModelSerializer):
     company_id = fields.Str(required=False)
 
     class Meta:
-        model = models.users
+        model = models.User
         fields = "__all__"
         dump_only = ("created_at",)

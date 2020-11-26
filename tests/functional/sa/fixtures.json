@@ -1,5 +1,5 @@
 {
-  "users": [
+  "User": [
     {
       "name": "John Doe",
       "email": "john@mail.com",
@@ -19,7 +19,7 @@
       "password": "very_pwfl"
     }
   ],
-  "companies": [
+  "Company": [
     {
       "name": "Google"
     },
@@ -27,7 +27,7 @@
       "name": "Facebook"
     }
   ],
-  "pg_sa_fields": [
+  "SAField": [
     {
       "BigInteger": 100,
       "Boolean": true,
