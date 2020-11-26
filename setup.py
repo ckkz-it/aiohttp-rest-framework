@@ -14,7 +14,6 @@ setup(
     license="MIT",
     author="Andrey Laguta",
     author_email="cirkus.kz@gmail.com",
-    py_modules=["aiohttp_rest_framework", "aiohttp_rest_framework/db"],
     description="Rest framework for aiohttp web server",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -24,10 +23,10 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         "aiohttp",
-        "aiohttp-cors",
         "marshmallow",
-        "databases-extended[postgresql]==0.4.1",
         "SQLAlchemy==1.4.0b1",
+        "psycopg2",
+        "asyncpg",
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",
