@@ -12,19 +12,20 @@ RUN apt-get update && apt-get install --no-install-recommends --assume-yes \
         bash \
         libpq-dev \
         g++ \
+        curl \
     && rm -rf /var/lib/apt/lists/* \
-    && mkdir -p /usr/src/app \
+    && mkdir -p /app \
     && mkdir -p /tests
 
-COPY requirements.txt /usr/src/app/requirements.txt
+COPY requirements.txt /app/requirements.txt
 
 RUN python3 -m pip install --upgrade pip setuptools wheel \
-    && pip install --no-cache-dir -r /usr/src/app/requirements.txt
+    && pip install --no-cache-dir -r /app/requirements.txt
 
-ENV PYTHONPATH="/usr/src/app:/tests:${PATH}"
+ENV PYTHONPATH="/app:/tests:${PATH}"
 
-COPY . /usr/src/app
+COPY . /app
 
-RUN chown -R appuser:appgroup /usr/src/app
+RUN chown -R appuser:appgroup /app
 USER appuser
-WORKDIR /usr/src/app
+WORKDIR /app

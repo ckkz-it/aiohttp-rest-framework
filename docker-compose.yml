@@ -5,8 +5,8 @@ services:
       context: ./
       dockerfile: Dockerfile
     volumes:
-      - ./:/usr/src/app
-    command: sh -c 'coverage run -m tests.tests_entry discover /usr/src/app/tests && coverage report --skip-covered'
+      - ./:/app
+    command: sh -c 'coverage run -m tests.tests_entry discover /app/tests && coverage report'
     depends_on:
       - postgres
     environment:

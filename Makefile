@@ -25,3 +25,7 @@ build_package:
 .PHONY: deploy_package
 deploy_package:
 	@docker-compose run --rm --no-deps tests sh -c 'twine upload dist/* -r pypi'
+
+.PHONY: upload_coverage
+upload_coverage:
+	@docker-compose run --rm --no-deps tests "bash <(curl -s https://codecov.io/bash)"

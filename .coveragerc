@@ -1,5 +1,9 @@
 [run]
 source = aiohttp_rest_framework
+omit =
+    dist
+    build
+    aiohttp_rest_framework.egg-info
 
 [report]
 exclude_lines =
