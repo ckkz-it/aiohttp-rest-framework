@@ -24,4 +24,4 @@ build_package:
 
 .PHONY: deploy_package
 deploy_package:
-	@twine upload dist/* -r pypi
+	@docker-compose run --rm --no-deps tests sh -c 'twine upload dist/* -r pypi'
