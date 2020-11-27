@@ -1,6 +1,6 @@
 # aiohttp-rest-framework
 
-![Codecov](https://img.shields.io/codecov/c/github/ckkz-it/aiohttp-rest-framework)
+[![codecov](https://codecov.io/gh/ckkz-it/aiohttp-rest-framework/branch/master/graph/badge.svg?token=TQKNYJH1RZ)](https://codecov.io/gh/ckkz-it/aiohttp-rest-framework)
 [![PyPI](https://img.shields.io/pypi/v/aiohttp-rest-framework)](https://pypi.org/project/aiohttp-rest-framework/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/aiohttp-rest-framework)](https://pypistats.org/packages/aiohttp-rest-framework)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/aiohttp-rest-framework)](https://pypi.org/project/aiohttp-rest-framework/)
