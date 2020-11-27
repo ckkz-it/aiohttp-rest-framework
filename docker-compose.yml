@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./:/app
-    command: sh -c 'coverage run -m tests.tests_entry discover /app/tests && coverage report'
+    command: sh -c 'coverage run -m tests.tests_entry discover /app/tests && coverage xml && coverage report'
     depends_on:
       - postgres
     environment:
