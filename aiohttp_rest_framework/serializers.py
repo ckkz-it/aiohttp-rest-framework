@@ -1,7 +1,7 @@
 import copy
 from itertools import chain
 from json import JSONDecodeError
-from typing import Any, Generic, Optional, OrderedDict, Sequence, TypeVar, cast, Mapping
+from typing import Any, Generic, Mapping, Optional, Sequence, TypeVar, cast
 
 import marshmallow as ma
 

@@ -12,7 +12,7 @@ from tests.functional.sa.core.utils import create_data_fixtures
 from tests.functional.sa.utils import create_tables, drop_tables
 from tests.test_app.sa.core.app import create_application
 from tests.test_app.sa.core.config import DB_URL
-from tests.test_app.sa.core.models import meta, SAField, User
+from tests.test_app.sa.core.models import SAField, User, meta
 from tests.utils import async_session
 
 

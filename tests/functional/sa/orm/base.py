@@ -11,7 +11,7 @@ from tests.functional.sa.orm.utils import create_data_fixtures
 from tests.functional.sa.utils import create_tables, drop_tables
 from tests.test_app.sa.orm.app import create_application
 from tests.test_app.sa.orm.config import DB_URL
-from tests.test_app.sa.orm.models import meta, SAField, User
+from tests.test_app.sa.orm.models import SAField, User, meta
 from tests.utils import async_session
 
 
