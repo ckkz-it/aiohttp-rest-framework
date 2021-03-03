@@ -20,11 +20,11 @@ setup(
     keywords=("restframework rest_framework aiohttp"
               " serializers asyncio rest aiohttp_rest_framework"),
     packages=find_packages(exclude=("tests", "tests.*")),
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     install_requires=[
         "aiohttp",
         "marshmallow",
-        "SQLAlchemy==1.4.0b1",
+        "SQLAlchemy==1.4.0b3",
         "psycopg2",
         "asyncpg",
     ],
@@ -34,7 +34,6 @@ setup(
         "Framework :: AsyncIO",
         "Intended Audience :: Developers",
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
