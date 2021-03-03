@@ -6,7 +6,7 @@ from aiohttp_rest_framework.fields import patch_marshmallow_fields
 from aiohttp_rest_framework.settings import Config, set_global_config
 from aiohttp_rest_framework.utils import create_connection  # noqa
 
-__version__ = "0.0.5"
+__version__ = "0.0.6"
 
 APP_CONFIG_KEY = "rest_framework"
 
