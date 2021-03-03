@@ -213,7 +213,7 @@ For more examples and usages please refer to [documentation]().
 
 ## Requirements
 
-Python >= 3.6
+Python >= 3.7
 
 #### Dependencies:
 - aiohttp
