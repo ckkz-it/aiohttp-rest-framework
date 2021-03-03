@@ -65,7 +65,7 @@ class DestroyModelMixin:
         instance = await self.get_object()
         serializer = self.get_serializer(instance)
         await self.perform_destroy(serializer)
-        return web.HTTPNoContent()
+        raise web.HTTPNoContent()
 
     async def perform_destroy(self, serializer: Serializer):
         await serializer.delete()
